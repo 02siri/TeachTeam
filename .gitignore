@@ -1,0 +1,38 @@
+# Node.js dependencies..
+node_modules/
+
+# build and output directoreis..
+dist/
+build/
+.cache/
+out/
+
+# TypeScript build files..
+*.tsbuildinfo
+
+# environment variables..
+.env
+.env.local
+
+# logs..
+logs/
+*.log
+
+# Next.js...
+.next/
+.vercel/
+
+# macOS and system files...
+.DS_Store
+Thumbs.db
+
+# testing and coverage..
+coverage/
+
+# IDE files..
+.vscode/
+.idea/
+
+# linting and formating caches..
+.eslintcache
+.prettiercache
