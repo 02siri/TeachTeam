@@ -22,6 +22,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthLogic";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { tutorApi } from "../services/api";
 
 
 
@@ -127,19 +128,11 @@ const TutorDashboard = () => {
   }, [user]); 
 
 
-  //handleApply function is called when the user clicks the Apply button..
-  //it first validates the form data using validateStep function..
-  //if validation passes, it creates an applicationData object with the form data..
-  //then it saves the application data to local storage with the key as the username..
-  //finally, it shows a success toast message..
-  //this allows the user to submit their application and save the data for later use..
-  const handleApply = () => {
+  const handleApply = async () => {
     if (validateStep() && user) {
       const applicationData = {
-        // email: user.email,
-        // name: username,
         role,
-        courses,
+        courses: courses.map((c) => c.id),
         previousRoles,
         availability,
         skills: mergedSkills,
@@ -147,26 +140,23 @@ const TutorDashboard = () => {
         customSkills,
         timestamp: new Date().toISOString(),
       };
-      localStorage.setItem(`${username}_applicationData`, JSON.stringify(applicationData));  //save data to local storage..
-      toast({
-        position: "top",
-        duration: 2000,
-        isClosable: true,
-        render: () => (
-          <Box
-            color="white"
-            px={6}
-            py={4}
-            rounded="md"
-            shadow="lg"
-            bgGradient="linear(to-r, green.400, green.600)"
-          >
-            <Text fontWeight="bold" fontSize="lg">🎉 Application Submitted!</Text>
-            <Text mt={1}>You’ve successfully submitted your tutor application form.</Text>
-          </Box>
-        ),
-      });
-      
+  
+      try {
+        await tutorApi.submitApplication(applicationData); 
+        toast({
+          position: "top",
+          duration: 2000,
+          isClosable: true,
+          render: () => (
+            <Box color="white" px={6} py={4} rounded="md" shadow="lg" bgGradient="linear(to-r, green.400, green.600)">
+              <Text fontWeight="bold" fontSize="lg">🎉 Application Submitted!</Text>
+              <Text mt={1}>Your application has been saved to the server.</Text>
+            </Box>
+          ),
+        });
+      } catch (error) {
+        console.error("Error saving tutor application", error);
+      }
     }
   };
 

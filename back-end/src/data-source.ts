@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import { DataSource } from "back-end";
-import { User } from "./entity/User";
+import { DataSource } from "typeorm";
+import { Tutor } from "./entity/Tutor";
 
 export const AppDataSource = new DataSource({
   type: "mysql",
@@ -14,7 +14,7 @@ export const AppDataSource = new DataSource({
   // but should be disabled in production to prevent accidental data loss.
   synchronize: true,
   logging: true,
-  entities: [User],
+  entities: [Tutor],
   migrations: [],
   subscribers: [],
 });
