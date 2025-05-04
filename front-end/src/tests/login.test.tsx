@@ -3,7 +3,6 @@ import LoginPage from "../pages/login";
 import { useAuth } from "@/context/AuthLogic";
 import { useRouter } from "next/router";
 import { ChakraProvider } from "@chakra-ui/react";
-import { disconnect } from "process";
 
 const LoginRender = () => render(
     <ChakraProvider>

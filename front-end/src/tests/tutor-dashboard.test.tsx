@@ -17,8 +17,18 @@ jest.mock("@chakra-ui/react", () => {
 
 
 //mock header and footer to simplify layout during testing..
-jest.mock("@/components/Header", () => () => <div>Header</div>);
-jest.mock("@/components/Footer", () => () => <div>Footer</div>);
+jest.mock("@/components/Header", () => {
+  const HeaderMock = () => <div>Header</div>;
+  HeaderMock.displayName = "MockHeader";
+  return HeaderMock;
+});
+
+// mock Footer component with display name
+jest.mock("@/components/Footer", () => {
+  const FooterMock = () => <div>Footer</div>;
+  FooterMock.displayName = "MockFooter";
+  return FooterMock;
+});
 
 
 

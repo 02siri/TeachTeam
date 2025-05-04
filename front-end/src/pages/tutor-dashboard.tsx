@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo} from "react";
 import React from "react";
 import {
   Box,
@@ -51,7 +51,7 @@ const TutorDashboard = () => {
   //returns true if all validations pass..
   //if any field is empty, it sets the error message for that field..
   const validateStep = () => {  
-    let newErrors: { [key: string]: string } = {};
+    const newErrors: { [key: string]: string } = {};
     if (role.length === 0) newErrors.role = "Role should not be empty";
     if (courses.length === 0) newErrors.courses = "Select at least one course";
     if (previousRoles.some((r) => r.trim() === "")) newErrors.previousRoles = "Enter previous role";
@@ -78,7 +78,7 @@ const TutorDashboard = () => {
 
   //available course options..
   //each course has an id and a name..
-  const courseOptions = [
+  const courseOptions = useMemo(() => [
     { id: "COSC2758", name: "Full Stack Development" },
     { id: "COSC2673", name: "Machine Learning" },
     { id: "COSC2391", name: "Further Programming" },
@@ -87,7 +87,7 @@ const TutorDashboard = () => {
     { id: "COSC2299", name: "SE Process & Tools" },
     { id: "COSC1085", name: "Software Testing" },
     { id: "COSC2625", name: "Intro to Cybersecurity" },
-  ];
+  ], []);
 
 
   //get the username from the email..
@@ -125,7 +125,7 @@ const TutorDashboard = () => {
         }
       }
     }
-  }, [user]); 
+  }, [user, courseOptions, username]);
 
 
   const handleApply = async () => {
@@ -220,7 +220,7 @@ const TutorDashboard = () => {
             color="blue.800"
             mb={6}
             >
-              Tell us the role you're interested in:
+              Tell us the role you&apos;re interested in:
               </FormLabel>
               
               <HStack spacing={6} justify="center">
@@ -369,7 +369,7 @@ const TutorDashboard = () => {
                       setPreviousRoles(updatedRoles);
                     }}
                     >
-                      −
+                      -
                       </Button>
                     )}
                     </HStack>
@@ -508,7 +508,7 @@ const TutorDashboard = () => {
                                   setCustomSkills(customSkills.filter((_, i) => i !== index))
                                 }
                                 >
-                                  −
+                                  -
                                   </Button>
                                 )}
                                 </HStack>
@@ -577,7 +577,7 @@ const TutorDashboard = () => {
                         setAcademicCred(updatedCreds);
                       }}
                       >
-                        −
+                        -
                     </Button>
                   )}
                   </HStack>

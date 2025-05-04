@@ -16,7 +16,7 @@ export interface Tutor {
 }
 
 export const tutorApi = {
-    submitApplication: async (applicationData: any) => {
+    submitApplication: async (applicationData: Omit<Tutor, "id">) => {
       const res = await api.post("/tutors", applicationData);
       return res.data;
     }

@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, useInView } from "framer-motion";
 import { useAuth } from "@/context/AuthLogic";
 import Link from "next/link";
+import Image from "next/image";
 import { BarChart,
   Bar,
   XAxis, 
@@ -61,13 +62,20 @@ const Home = () => {
   //the initial value is set to an empty string...
   const [lastUpdated, setLastUpdated] = useState("");
 
-
-  //stats related to selection analysis..
-  const [mostChosen, setMostChosen] = useState<any>(null);
-  const [leastChosen, setLeastChosen] = useState<any>(null);
-  const [unselectedApplicants, setUnselectedApplicants] = useState<any[]>([]);
+  interface Applicant {
+      name?: string;
+      email?: string;
+      selectedCourses?: string[];
+      courses?: { id: string; name: string }[];
+      [key: string]: string | string[] | { id: string; name: string }[] | undefined;
+  }
+  
+  const [mostChosen, setMostChosen] = useState<Applicant | null>(null);
+  const [leastChosen, setLeastChosen] = useState<Applicant | null>(null);
+  const [, setUnselectedApplicants] = useState<Applicant[]>([]);
   const [rankChartData, setRankChartData] = useState<{ name: string; count: number }[]>([]);
   const [selectionPieData, setSelectionPieData] = useState<{ name: string; value: number }[]>([]);
+
 
 
   //effect #1:summarize all tutor application data
@@ -94,11 +102,15 @@ const Home = () => {
       "Full-Time": 0
     };
 
+    interface Course {
+      id: string;
+      name: string;
+    }
+
 
     //loop through each application and populate the maps
     applications.forEach((app) => {
-      //count courses 
-      app.courses?.forEach((course: any) => {
+      app.courses?.forEach((course: Course) => {
         if (!coursesMap[course.id]) {
           coursesMap[course.id] = {
             id: course.id,
@@ -156,8 +168,19 @@ const Home = () => {
   // it fetches the selected applicants from local storage and updates the most and least chosen applicants...
   // it also updates the unselected applicants based on the selection count...
   // it also updates the rank chart data and selection pie data...
+  interface Applicant {
+    name?: string;
+    email?: string;
+    selectedCourses?: string[];
+    courses?: { id: string; name: string }[];
+    skills?: string[];
+    role?: string[];
+    availability?: string;
+  }
+  
+  
  useEffect(() => {
-   const allApplicants: any[] = [];
+  const allApplicants: Applicant[] = [];
    const selectedApplicantsString = localStorage.getItem("selectedApplicants");
    const selectedApplicants = selectedApplicantsString ? JSON.parse(selectedApplicantsString) : [];
 
@@ -172,7 +195,7 @@ const Home = () => {
 
    //count frequency of selected courses..
   const courseCountMap: Record<string, number> = {};
-  selectedApplicants.forEach((app: any) => {
+  (selectedApplicants as Applicant[]).forEach((app) => {
     const courses = app.selectedCourses || [];
     courses.forEach((course: string) => {
       const courseCode = course.split(" - ")[0]; // Get only the course code
@@ -189,21 +212,24 @@ const Home = () => {
 
 
   const courseFrequencyMap: Record<string, number> = {};
-  selectedApplicants.forEach((app: any) => {
+  (selectedApplicants as Applicant[]).forEach((app) => {
     (app.selectedCourses || []).forEach((course: string) => {
       const courseCode = course.split(" - ")[0];
       courseFrequencyMap[courseCode] = (courseFrequencyMap[courseCode] || 0) + 1;
     });
   });
-  selectedApplicants.forEach((app: any) => {
+  (selectedApplicants as Applicant[]).forEach((app) => {
     const id = app.email;
-    selectionCountMap[id] = (selectionCountMap[id] || 0) + 1;
+    if (id) {
+      selectionCountMap[id] = (selectionCountMap[id] || 0) + 1;
+    }
   });
-  let most: any = null;
-  let least: any = null;
+  let most: Applicant | null = null;
+  let least: Applicant | null = null;
+
   let highestScore = -Infinity;
   let lowestScore = Infinity;
-  selectedApplicants.forEach((app: any) => {
+  (selectedApplicants as Applicant[]).forEach((app) => {
     const courses = app.selectedCourses || [];
     if (courses.length === 0) return;
     const totalScore = courses.reduce((acc: number, course: string) => {
@@ -230,8 +256,8 @@ const Home = () => {
   setRankChartData(rankData);
 
 
-  const unselected = allApplicants.filter((app) =>
-    !selectedApplicants.some((s: any) => s.email === app.email)
+  const unselected = allApplicants.filter((app: Applicant) =>
+    !selectedApplicants.some((s: Applicant) => s.email === app.email)
   );
   setUnselectedApplicants(unselected);
   setSelectionPieData([
@@ -314,7 +340,7 @@ const Home = () => {
         
         {/* RIGHT: IMAGE STACK */}
         <div className="flex flex-row items-center">
-          <img src="/home.png"  />
+        <Image src="/home.png" alt="Teach Team image" width={500} height={500} />
         </div>
       </div>
       
@@ -595,14 +621,14 @@ const Home = () => {
         <p className="text-center text-gray-700 font-semibold text-lg">
           {mostChosen?.name || "N/A"}
         </p>
-        {mostChosen?.selectedCourses?.length > 0 && (
+        {(mostChosen?.selectedCourses ?? []).length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
             className="mt-4 flex flex-wrap justify-center gap-2"
           >
-            {mostChosen.selectedCourses.map((c: string, idx: number) => (
+            {(mostChosen?.selectedCourses ?? []).map((c, idx) => (
               <motion.span
                 key={idx}
                 whileHover={{ scale: 1.1 }}
@@ -627,14 +653,14 @@ const Home = () => {
         <p className="text-center text-gray-700 font-semibold text-lg">
           {leastChosen?.name || "N/A"}
         </p>
-        {leastChosen?.selectedCourses?.length > 0 && (
+        {(leastChosen?.selectedCourses ?? []).length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
             className="mt-4 flex flex-wrap justify-center gap-2"
           >
-            {leastChosen.selectedCourses.map((c: string, idx: number) => (
+            {(leastChosen?.selectedCourses ?? []).map((c, idx) => (
               <motion.span
                 key={idx}
                 whileHover={{ scale: 1.1 }}
