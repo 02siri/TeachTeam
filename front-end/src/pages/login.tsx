@@ -6,6 +6,8 @@ import { useInView } from "framer-motion";
 import { useRef } from "react";
 import React from "react";
 import Head from "next/head";
+import Image from "next/image";
+
 
 import {
     Box,
@@ -21,7 +23,6 @@ import {
     InputGroup,
     InputRightElement,
     Flex,
-    background
   } from "@chakra-ui/react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -174,7 +175,7 @@ export default function LoginPage(){
         <>
         <Head>
         {/* LordIcon library for animated icons */}
-        <script src="https://cdn.lordicon.com/lordicon.js"></script>
+        <script src="https://cdn.lordicon.com/lordicon.js" async defer></script>
         </Head>
     
         <Header />
@@ -188,10 +189,12 @@ export default function LoginPage(){
         >
 
         {/* Background image for the login page */}
-        <img src="/loginBG.jpg"
-        alt = "Background"
-        className = "absolute inset-0 w-full h-full object-cover z-0"
-        />
+        <Image
+        src="/loginBG.jpg"
+        alt="Background"
+        fill
+        className="object-cover z-0"
+        style={{ position: "absolute", inset: 0 }}/>
 
         {/* Login Card with animation that triggers when scrolled into view */}
         <motion.div
@@ -225,8 +228,9 @@ export default function LoginPage(){
                 textAlign="left"
                 lineHeight="1.6"
                 >
-                "{quotes[quoteIndex]}"
+                    {`"${quotes[quoteIndex]}"`}
                 </Text>
+
 
                 <Text fontSize="md" opacity={0.6} mt={4}>Hover to inspire ✨</Text>
             </motion.div>

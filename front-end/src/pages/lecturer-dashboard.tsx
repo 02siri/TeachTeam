@@ -92,6 +92,12 @@ const LecturerDashboard = () => {
     return formattedName;
   };
 
+  interface Course {
+    id: string;
+    name: string;
+  }
+  
+
   /**
    * Load applicant data from localStorage on component mount
    * Finds all entries with "_applicationData" suffix and parses them
@@ -109,7 +115,7 @@ const LecturerDashboard = () => {
             return {
               ...applicantData,
               name: name,
-              courses: applicantData.courses?.map((c: any)=> `${c.id} - ${c.name}`) || [],
+              courses: (applicantData.courses as unknown as Course[])?.map((c) => `${c.id} - ${c.name}`) || [],
               };
           } catch (error) {
             console.error(`Error parsing applicant data for ${key}: `, error);
