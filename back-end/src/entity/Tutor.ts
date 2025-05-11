@@ -5,8 +5,11 @@ export class Tutor {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column("simple-array")
-  role: string[];
+  @Column({ unique: true })  
+  email: string;
+
+  @Column()
+  role: string;
 
   @Column("simple-array")
   courses: string[];
