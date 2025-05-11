@@ -36,7 +36,7 @@ const TutorDashboard = () => {
   //state variables to manage form data..
   //role, courses, previous roles, availability, skills, academic credentials, custom skills..
   //and errors..
-  const [role, setRole] = useState<string[]>([]);
+  const [role, setRole] = useState<string>(""); 
   const [courses, setCourses] = useState<{ id: string; name: string }[]>([]);
   const [previousRoles, setPreviousRoles] = useState([""]);
   const [availability, setAvailability] = useState("");
@@ -44,6 +44,8 @@ const TutorDashboard = () => {
   const [academicCred, setAcademicCred] = useState([""]);
   const [customSkills, setCustomSkills] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});    //validation errors..
+  const [existingApplication, setExistingApplication] = useState<null | { role: string }>(null);
+
 
 
   //validation function for the form..
@@ -52,7 +54,7 @@ const TutorDashboard = () => {
   //if any field is empty, it sets the error message for that field..
   const validateStep = () => {  
     const newErrors: { [key: string]: string } = {};
-    if (role.length === 0) newErrors.role = "Role should not be empty";
+    if (!role) newErrors.role = "Please select one role";
     if (courses.length === 0) newErrors.courses = "Select at least one course";
     if (previousRoles.some((r) => r.trim() === "")) newErrors.previousRoles = "Enter previous role";
     if (!availability) newErrors.availability = "Select availability";
@@ -68,12 +70,9 @@ const TutorDashboard = () => {
   //otherwise, add it to the array..
   //this allows multiple roles to be selected..
   const toggleRole = (selectedRole: string) => {
-    setRole((prev) =>
-      prev.includes(selectedRole)
-        ? prev.filter((r) => r !== selectedRole)
-        : [...prev, selectedRole]
-    );
+    setRole((prev) => (prev === selectedRole ? "" : selectedRole));
   };
+  
 
 
   //available course options..
@@ -92,7 +91,27 @@ const TutorDashboard = () => {
 
   //get the username from the email..
   //this is done by splitting the email at the '@' symbol and taking the first part..
-  const username = user?.email?.split("@")[0];  
+  // const username = user?.email?.split("@")[0];  
+
+  const email = user?.email;
+
+  useEffect(() => {
+    const fetchApplication = async () => {
+      if (!email) return;
+  
+      try {
+        const res = await tutorApi.getApplication(email);
+        if (res?.data) {
+          setExistingApplication(res.data);
+        }
+      } catch (err) {
+        console.error("Error fetching application:", err);
+      }
+    };
+  
+    fetchApplication();
+  }, [email]);
+  
 
 
   //merge skills and custom skills
@@ -102,36 +121,14 @@ const TutorDashboard = () => {
       : skills;
 
 
-  //load saved application data from local storage when the component mounts..
-  //if the user is logged in, check if there is any saved data for the user..
-  //if there is, parse it and set the state variables accordingly..
-  //this allows the user to resume their application from where they left off..
-  useEffect(() => {
-    if (user) {
-      const storedData = localStorage.getItem(`${username}_applicationData`);
-      if (storedData) {
-        const savedData = JSON.parse(storedData);
-        if (savedData) {
-          setRole(savedData.role || []);
-          const restoredCourses = courseOptions.filter(course =>
-            savedData.courses?.includes(course.id)
-          );
-          setCourses(restoredCourses);
-          setPreviousRoles(savedData.previousRoles || [""]);
-          setAvailability(savedData.availability || "");
-          setSkills(savedData.skills || []);
-          setAcademicCred(savedData.academicCred || [""]);
-          setCustomSkills(savedData.customSkills || []);
-        }
-      }
-    }
-  }, [user, courseOptions, username]);
+
 
 
   const handleApply = async () => {
     if (validateStep() && user) {
       const applicationData = {
-        role,
+        email: user.email,
+        role: [role],
         courses: courses.map((c) => c.id),
         previousRoles,
         availability,
@@ -159,6 +156,7 @@ const TutorDashboard = () => {
       }
     }
   };
+
 
 
   //toast notification for success message..
@@ -230,12 +228,16 @@ const TutorDashboard = () => {
               {/*this is a motion-enhanced vertical stack for the Tutor role*/}
               <MotionVStack
               spacing={2}
-              onClick={() => toggleRole("Tutor")}
+              onClick={() => {
+                if (!existingApplication) toggleRole("Tutor");
+              }}
+              pointerEvents={existingApplication ? "none" : "auto"}
+              opacity={existingApplication ? 0.6 : 1}
               cursor="pointer"
               align="center"
               borderWidth="2px"
-              borderColor={role.includes("Tutor") ? "blue.500" : "gray.300"}
-              bg={role.includes("Tutor") ? "blue.50" : "white"}
+              borderColor={role === "Tutor" ? "blue.500" : "gray.300"}
+              bg={role === "Tutor" ? "blue.50" : "white"}
               p={3}
               rounded="md"
               _hover={{ borderColor: "blue.500" }}
@@ -251,17 +253,21 @@ const TutorDashboard = () => {
               {/*this is a motion-enhanced vertical stack for the Lab Assistant role*/}
               <MotionVStack
               spacing={2}
-              onClick={() => toggleRole("Lab Assistant")}
+              onClick={() => {
+                if (!existingApplication) toggleRole("Lab Assistant");
+              }}
+              pointerEvents={existingApplication ? "none" : "auto"}
+              opacity={existingApplication ? 0.6 : 1}
               cursor="pointer"
               align="center"
               borderWidth="2px"
-              borderColor={role.includes("Lab Assistant") ? "blue.500" : "gray.300"}
+              borderColor={role=="Lab Assistant" ? "blue.500" : "gray.300"}
               p={3}
               rounded="md"
               _hover={{ borderColor: "blue.500" }}
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
-              bg={role.includes("Lab Assistant") ? "blue.50" : "white"}
+              bg={role=="Lab Assistant" ? "blue.50" : "white"}
               >
                 <Image src="lab_assistant.png" alt="Lab Assistant" width={200} height={200} />
                 <Text fontWeight="bold">Lab Assistant</Text>
@@ -595,27 +601,33 @@ const TutorDashboard = () => {
                 {/*if the user doesn't fill in all the required fields, an error message is shown*/}
                 {/*the application data is saved to local storage*/}
                 {/*the user can also click the Save button to save their application data*/}                     
-                      <Flex justify="center" mt={6}>
-                        <Button
-                        onClick={handleApply}
-                        px={6}
-                        py={4}
-                        borderRadius="full"
-                        border="1px solid"
-                        borderColor="green.500"
-                        color="green.500"
-                        bg="transparent"
-                        _hover={{
-                          bg: "green.500",
-                          color: "white", 
-                          boxShadow: "0 0 10px rgba(0, 128, 0, 0.5)",
-                        }}
-                        transition="all 0.3s"
-                        shadow="sm"
-                        >
-                          Apply
-                        </Button>
-                    </Flex>
+                <Flex justify="center" mt={6}>
+  {!existingApplication ? (
+    <Button
+      onClick={handleApply}
+      px={6}
+      py={4}
+      borderRadius="full"
+      border="1px solid"
+      borderColor="green.500"
+      color="green.500"
+      bg="transparent"
+      _hover={{
+        bg: "green.500",
+        color: "white",
+        boxShadow: "0 0 10px rgba(0, 128, 0, 0.5)",
+      }}
+      transition="all 0.3s"
+      shadow="sm"
+    >
+      Apply
+    </Button>
+  ) : (
+    <Text fontSize="lg" fontWeight="bold" color="red.500" textAlign="center">
+      You have already applied for the {existingApplication.role} role.
+    </Text>
+  )}
+</Flex>
 
 
       </MotionVStack>

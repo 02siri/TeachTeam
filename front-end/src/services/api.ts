@@ -18,9 +18,12 @@ export interface Tutor {
 
 export const tutorApi = {
     submitApplication: async (applicationData: Omit<Tutor, "id">) => {
-      const res = await api.post("/tutors", applicationData);
+      const res = await api.post("/apply", applicationData);
       return res.data;
-    }
+    },
+    getApplication: async (email: string) => {
+      return await axios.get(`/apply?email=${email}`);
+    },
 };
 
 export interface User{
