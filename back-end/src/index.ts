@@ -7,7 +7,6 @@ import userRoutes from "./routes/users.routes";
 import authRoutes from "./routes/auth.routes";
 import cors from "cors";
 import session from "express-session";
-import "./types/express-session";
 
 dotenv.config();
 
@@ -20,7 +19,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(session({
-secret: process.env.SESSION_SECRET!,
+  secret: process.env.SESSION_SECRET || "fallbackSecret",
 resave: false,
 saveUninitialized: false,
 cookie:{

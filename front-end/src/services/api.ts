@@ -70,7 +70,7 @@ export const authApi = {
     try{
       const res = await api.get("/auth/current-user");
       return res.data;
-    }catch(error){
+    }catch{
       return null;
     }
   }
