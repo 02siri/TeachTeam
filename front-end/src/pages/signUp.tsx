@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import {userApi,} from "../services/api";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 
 function PasswordInput({value, onChange} : {value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>)=>void}) {
   const [show, setShow] = useState(false); // State to toggle password visibility
@@ -58,7 +58,7 @@ export default function SignUp(){
   const router = useRouter();
   const toast = useToast();   
   const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [, setIsSubmitting] = useState(false);
   const registerRef = useRef(null);
   const isInView = useInView(registerRef, {once:true});
 
