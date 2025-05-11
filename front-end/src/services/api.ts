@@ -22,8 +22,9 @@ export const tutorApi = {
       return res.data;
     },
     getApplication: async (email: string) => {
-      return await axios.get(`/apply?email=${email}`);
-    },
+      const res = await api.get(`/apply?email=${email}`);
+      return res.data;
+    },    
 };
 
 export interface User{
