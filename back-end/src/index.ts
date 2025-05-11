@@ -2,6 +2,8 @@ import "reflect-metadata";
 import express from "express";
 import { AppDataSource } from "./data-source";
 import tutorRoutes from "./routes/tutor.routes";
+import userRoutes from "./routes/users.routes";
+
 import cors from "cors";
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -9,6 +11,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 app.use("/api", tutorRoutes);
+app.use("/api", userRoutes);
 
 AppDataSource.initialize()
   .then(() => {

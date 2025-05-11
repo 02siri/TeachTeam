@@ -10,19 +10,28 @@ private usersRepository = AppDataSource.getRepository(Users);
 // Creates a new user in the database
   async createUser(request: Request, response: Response) {
     //dateOfJoining not in request body - automatically set by @CreateDateColumn declaration
-    const { firstName, lastName, email, password } = request.body;
+    const { firstName, lastName, username, email, password } = request.body;
 
+    try{
+      const existingUser = await this.usersRepository.findOneBy({email});
+      if(existingUser){
+        return response.status(409).json({
+          message: "Email already exists"
+        });
+      }
+    
     const user = Object.assign(new Users(), {
       firstName,
       lastName,
       email,
+      username,
       password, //will be hashed by @BeforeInsert hook
     });
 
-    try {
       const savedUser = await this.usersRepository.save(user);
       return response.status(201).json(savedUser);
-    } catch (error) {
+      
+    }catch (error) {
       return response
         .status(400)
         .json({ message: "Error creating user", error });

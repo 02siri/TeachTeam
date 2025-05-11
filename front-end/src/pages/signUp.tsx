@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import {userApi,} from "../services/api";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import axios, { AxiosError } from "axios";
 
 function PasswordInput({value, onChange} : {value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>)=>void}) {
   const [show, setShow] = useState(false); // State to toggle password visibility
@@ -116,7 +117,7 @@ export default function SignUp(){
         if(!validateEmail(email)){
             setErrors((prev)=>({
                 ...prev,
-                email : "Please enter a valid RMIT email.",
+                email : "Email must end in '@rmit.edu.au' .",
             }));
             hasErrors = true;
         }
@@ -125,29 +126,37 @@ export default function SignUp(){
         if(!validatePassword(password)){
             setErrors((prev)=>({
                 ...prev,
-                password : "Please enter a valid password .",
+                password : "Password must have atleast 10 characters, include uppercase, lowercase, number and special character.",
             }));
             hasErrors = true;
         }
 
 if(!hasErrors){
-    toast({
-       title: "Your Sign Up was Successful ! ",
-        description: "Redirecting to Dashboard",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-        });
-      //router.push("/tutor-dashboard");
-       router.push("/login");
     try {
     setIsSubmitting(true);
     const response = await userApi.createUser(newUser);
-    console.log("User registered successfully: " , response);
+      toast({
+            title: "Your Sign Up was Successful ! ",
+              description: "Redirecting to Dashboard",
+              status: "success",
+              duration: 3000,
+              isClosable: true,
+              });
+            //router.push("/tutor-dashboard");
       setNewUser({ firstName: "", lastName: "", username: "", email: "", password: "" });
-    } catch (err) {
-      console.log(err);
+      router.push("/login");
+      console.log("User registered successfully: " , response);
+      
+    } catch (error) { 
+      const axiosError = error as AxiosError<{message: string}>;
+
+      if(axiosError.response && axiosError.response.status === 409){
+        setError("Email already exists. Please use a different one.")
+      }
+      else{
+        console.log(axiosError);
       setError("Failed to create user");
+      }
     }finally{
         setIsSubmitting(false);
     }
@@ -270,14 +279,15 @@ if(!hasErrors){
                 <Heading as = "h2" size = "lg" color = "#0E4C92" textAlign = "center" mb= {6}>Sign Up</Heading>     
                 
                     {/* Login form with validation */}
-                    <form onSubmit={handleSubmit}>
-                {["firstname", "lastname", "username"].map((field) => {
-                    const label = field.replace(/([A-Z])/g, ' $1').charAt(0).toUpperCase() + field.slice(1);
-                    const placeholder = label;
+                <form onSubmit={handleSubmit}>
+                {["firstName", "lastName", "username"].map((field) => {
+                    const label = field.replace(/([A-Z])/g, ' $1').trim();
+                    const formattedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+                    const placeholder = `Enter your ${formattedLabel}`;
                   return (
                     <FormControl key={field} isRequired mb={4} >
                         <FormLabel textTransform="capitalize" color="#0E4C92" fontWeight="bold">
-                        {label}
+                        {formattedLabel}
                         </FormLabel>
                         <Input
                         name={field} // This remains the camelCase key for state update
@@ -286,7 +296,7 @@ if(!hasErrors){
                         bg="gray.100"
                         color="black"
                         focusBorderColor="blue.400"
-                        placeholder={`Enter your ${placeholder}`} // Set the placeholder
+                        placeholder={placeholder} // Set the placeholder
                         />
                     </FormControl>
                     );
