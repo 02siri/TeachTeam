@@ -105,7 +105,7 @@ export default function LoginPage(){
     };
 
     // Form submission handler
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setErrors({
             email: "", 
@@ -134,7 +134,7 @@ export default function LoginPage(){
     
         // If no validation errors, attempt login
         if(!hasErrors){
-        const success = login(formData.email, formData.password);
+        const success = await login({email: formData.email, password: formData.password});
 
         if(success){
                 // Show success toast and redirect on successful login

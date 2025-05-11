@@ -2,6 +2,7 @@ import axios from "axios";
 
 export const api = axios.create({
   baseURL: "http://localhost:3001/api", 
+  withCredentials: true,
 });
 
 export interface Tutor {
@@ -51,5 +52,24 @@ export const userApi = {
   }
 }
   
+export const authApi = {
+  login: async(credentials: {email: string, password: string}) => {
+    const res = await api.post("/auth/login", credentials);
+    return res.data
+  },
   
+  logout: async () => {
+    const res = await api.post("/auth/logout");
+    return res.data;
+  },
+
+  getCurrentUser: async(): Promise<User|null> => {
+    try{
+      const res = await api.get("/auth/current-user");
+      return res.data;
+    }catch(error){
+      return null;
+    }
+  }
+} 
   

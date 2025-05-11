@@ -32,8 +32,9 @@ function PasswordInput({value, onChange} : {value: string; onChange: (e: React.C
      </InputGroup>
    );
  };
+
 interface NewUser{
-   firstName: string,
+  firstName: string,
   lastName: string,
   username: string,
   email: string,
