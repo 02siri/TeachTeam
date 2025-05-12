@@ -58,22 +58,23 @@ export const userApi = {
   
 export const authApi = {
   login: async(credentials: {email: string, password: string}) => {
-    const res = await api.post("/auth/login", credentials);
+    const res = await api.post<{message: string; user: {email: string, username: string}}>
+    ("/login", credentials);
     return res.data
   },
   
   logout: async () => {
-    const res = await api.post("/auth/logout");
+    const res = await api.post("/logout");
     return res.data;
   },
 
-  getCurrentUser: async(): Promise<User|null> => {
-    try{
-      const res = await api.get("/auth/current-user");
-      return res.data;
-    }catch{
-      return null;
-    }
-  }
+  // getCurrentUser: async(): Promise<User|null> => {
+  //   try{
+  //     const res = await api.get("/auth/current-user");
+  //     return res.data;
+  //   }catch{
+  //     return null;
+  //   }
+  // }
 } 
   

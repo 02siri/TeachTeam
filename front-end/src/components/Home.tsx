@@ -38,7 +38,7 @@ const Home = () => {
 
   //useAuth hook to get the current user and logout function
   //this hook is defined in the AuthLogic.tsx file...
-  const { user} = useAuth();
+  const {currentUserEmail} = useAuth();
 
 
   //useState hook to manage the state of the total applications...
@@ -303,14 +303,14 @@ const Home = () => {
         </motion.p>
         
         {/* Button apply now for tutors and hire now for lecturer */}
-        {user && (
+        {currentUserEmail && (
           <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1, duration: 0.8 }}
           className="mt-8">
             
-            {user.email.endsWith("@student.rmit.edu.au") ? (
+            {currentUserEmail.endsWith("@student.rmit.edu.au") ? (
               <Link href="/tutor-dashboard">
               <button className="relative inline-block text-white font-semibold py-3 px-8 rounded-full transition duration-300 group overflow-hidden shadow-lg border border-white"
                 style={{
@@ -322,7 +322,7 @@ const Home = () => {
               </button>
             </Link>
               
-            ) : user.email.endsWith("@staff.rmit.edu.au") ? (
+            ) : currentUserEmail.endsWith("@staff.rmit.edu.au") ? (
               <Link href="/lecturer-dashboard">
               <button className="relative inline-block text-white font-semibold py-3 px-8 rounded-full transition duration-300 group overflow-hidden shadow-lg border border-white"
                 style={{
@@ -356,7 +356,7 @@ const Home = () => {
     {/* sign-in Box */}
     {/* this box is only visible when the user is not logged in */}
     {/* it contains a heading, description, and a button to sign in */}
-    {!user && (
+    {!currentUserEmail && (
   <main
     className="flex-grow flex items-center justify-center min-h-screen w-full px-6 bg-cover bg-center"
     style={{ backgroundImage: "url('/bg.jpg')" }}

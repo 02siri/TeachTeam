@@ -31,7 +31,7 @@ const MotionBox = motion(Box);
 const MotionVStack = motion(VStack); 
 
 const TutorDashboard = () => {
-  const { user } = useAuth();   //get the currently authenticated user..
+  const {currentUserEmail} = useAuth();   //get the currently authenticated user..
 
   //state variables to manage form data..
   //role, courses, previous roles, availability, skills, academic credentials, custom skills..
@@ -93,7 +93,7 @@ const TutorDashboard = () => {
   //this is done by splitting the email at the '@' symbol and taking the first part..
   // const username = user?.email?.split("@")[0];  
 
-  const email = user?.email;
+  const email = currentUserEmail;
 
   useEffect(() => {
     const fetchApplication = async () => {
@@ -125,9 +125,9 @@ const TutorDashboard = () => {
 
 
   const handleApply = async () => {
-    if (validateStep() && user) {
+    if (validateStep() && currentUserEmail) {
       const applicationData = {
-        email: user.email,
+        email: currentUserEmail,
         role: [role],
         courses: courses.map((c) => c.id),
         previousRoles,

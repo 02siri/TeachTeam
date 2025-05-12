@@ -6,7 +6,6 @@ import tutorRoutes from "./routes/tutor.routes";
 import userRoutes from "./routes/users.routes";
 import authRoutes from "./routes/auth.routes";
 import cors from "cors";
-import session from "express-session";
 
 dotenv.config();
 
@@ -18,17 +17,6 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use(session({
-  secret: process.env.SESSION_SECRET || "fallbackSecret",
-resave: false,
-saveUninitialized: false,
-cookie:{
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  maxAge: 1000 * 60 * 60 * 24 * 7 //7 days
-},
-}));
-
 app.use("/api", tutorRoutes);
 app.use("/api", userRoutes);
 app.use("/api", authRoutes);

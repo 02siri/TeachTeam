@@ -13,7 +13,7 @@ const Header = () => {
 
   //useAuth hook to get the current user and logout function
   //this hook is defined in the AuthLogic.tsx file in the context folder...
-  const {user,logout} = useAuth();
+  const {currentUserEmail, currentUsername, logout} = useAuth();
   const router = useRouter();
 
   //Function to extract the name from the email address
@@ -21,13 +21,13 @@ const Header = () => {
   //it also capitalizes the first letter of the name...
   //if the email address is empty, it returns "Guest" as the default name...
   //this function is used to display the welcome message in the header...
-  const extractName = (email: string) => {
-      if (!email) return "Guest";
-        //Get the name part before the '@' symbol
-        const namePart = email.split("@")[0];
-        //Capitalize first letter
-        return namePart.charAt(0).toUpperCase() + namePart.slice(1);
-    }
+  // const extractName = (email: string) => {
+  //     if (!email) return "Guest";
+  //       //Get the name part before the '@' symbol
+  //       const namePart = email.split("@")[0];
+  //       //Capitalize first letter
+  //       return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+  //   }
   
   const handleLogout = () =>{
     logout();
@@ -64,9 +64,9 @@ const Header = () => {
             >Home
             </Link>
             </li>
-          {user && (
+          {currentUserEmail && (
               <>
-              {user.email.endsWith("@student.rmit.edu.au") && (
+              {currentUserEmail.endsWith("@student.rmit.edu.au") && (
                 <li>
                   <Link 
                   href = "/tutor-dashboard"
@@ -76,7 +76,7 @@ const Header = () => {
                 </li>
               )}
 
-              {user.email.endsWith("@staff.rmit.edu.au") && (
+              {currentUserEmail.endsWith("@staff.rmit.edu.au") && (
                 <li>
                   <Link 
                   href = "/lecturer-dashboard" 
@@ -92,12 +92,12 @@ const Header = () => {
         {/* If the user is logged in, a welcome message and logout button are displayed */}
         {/* If the user is not logged in, login and register buttons are displayed */}
         <ul className="flex space-x-4 ml-auto">
-        {user ? (
+        {currentUsername ? (
                    //If user is logged in, show welcome msg and logout button
                    <div className = "flex items-center space-x-4">
                     
                     <span className="text-white font-semibold text-lg tracking-wide font-playfair italic px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm hover:shadow-[0_0_10px_rgba(173,216,230,0.4)] transition duration-300">
-                        Welcome, {extractName(user.email)}!
+                        Welcome, {currentUsername}!
                       </span>
 
                       <button onClick={handleLogout} 

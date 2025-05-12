@@ -1,10 +1,11 @@
-import React, {createContext,useContext,useState,useEffect} from "react";
+import React, {createContext,useContext,useState} from "react";
 // import {User,DEFAULT_USERS} from "../types/users";
-import { authApi, User as ApiUser } from "@/services/api";
+import { authApi} from "@/services/api";
 import { useRouter } from "next/router";
 
 interface AuthContextType{
- user : ApiUser | null; //currently logged-in : user ; otherwise: null
+ currentUserEmail : string | null; //currently logged-in : user ; otherwise: null
+ currentUsername : string | null;
  login : (credentials: {email: string, password: string}) => Promise<boolean>; //login function takes in email & password; returns true if login successfully
  logout : () => Promise<void>; //function to logout the user
 }
@@ -17,31 +18,29 @@ export function AuthProvider(
     {children}:{children:React.ReactNode}
 ){
    //initial state -> null
-    const [user , setUser] = useState< ApiUser | null >(null);  
-    const router = useRouter();
-                       
-    //initialize users and current user on component mount
-    useEffect(() => {
-        const checkCurrentUser = async () => {
-            try{
-                const currentUserData = await authApi.getCurrentUser();
-                if(currentUserData){
-                    setUser(currentUserData);
-                }
-            }catch(error){
-                console.log("Error checking user ", error);
-            }
-        };
+    const [currentUserEmail , setCurrentUserEmail] = useState< string | null >(
+        //Check if we are running in a browser environment. 
+        // If we are, try to get the value associated with the key 'currentUserEmail' from the session storage. 
+        // If we are not in a browser environment, return null
+        typeof window!== "undefined" ? sessionStorage.getItem("currentUserEmail") : null
+    );  
 
-        checkCurrentUser();
-    },[]);
+     const [currentUsername , setCurrentUsername] = useState< string | null >(
+        typeof window!== "undefined" ? sessionStorage.getItem("currentUsername") : null
+    );  
+    const router = useRouter();
 
     //login function
     const login = async (credentials: {email: string, password: string}): Promise<boolean> => {
         try{
             const response = await authApi.login(credentials);
-            if(response.user){
-                setUser(response.user);
+            console.log("Login response: ", response);
+
+            if(response.user && response.user.email && response.user.username){
+                sessionStorage.setItem("CurrentUserEmail", response.user.email);
+                sessionStorage.setItem("CurrentUsername", response.user.username);
+                setCurrentUserEmail(response.user.email);
+                setCurrentUsername(response.user.username);
                 return true;
             }
             return false;
@@ -53,18 +52,15 @@ export function AuthProvider(
 
     //logout function
     const logout =  async () => {
-        try{
-            await authApi.logout();
-            setUser(null);
-            router.push("/login");
-        }catch(error){
-            console.log("Logout Failed: ", error);
-        }
+        sessionStorage.removeItem("CurrentUserEmail");
+        sessionStorage.removeItem("CurrentUsername");
+        setCurrentUserEmail(null);
+        router.push("/login");
     };
 
     //wrapping children with AuthContext.provider, passing these values:
     return(
-        <AuthContext.Provider value = {{user,login,logout}}>
+        <AuthContext.Provider value = {{currentUserEmail,currentUsername,login,logout}}>
             {children}
         </AuthContext.Provider>
     );
