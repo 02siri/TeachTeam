@@ -33,11 +33,13 @@ export interface User{
   lastName: string,
   username: string,
   email: string,
+  isBlocked: boolean,
+  userType: "Candidate" | "Lecturer" | "Admin" ,
   dateOfJoining: string
 }
 
 export const userApi = {
-  createUser: async(userData: Omit<User,"id" | "dateOfJoining"> & {password: string}) => {
+  createUser: async(userData: Omit<User,"id" | "dateOfJoining" | "isBlocked"> & {password: string}) => {
     const res = await api.post("/users", userData);
     return res.data;
   },
@@ -45,13 +47,13 @@ export const userApi = {
     const res = await api.get("/users");
     return res.data;
   },
-  getStudentUsers: async(): Promise<User[]> => {
-    const res = await api.get("/users/students");
+  getCandidates: async(): Promise<User[]> => {
+    const res = await api.get("/users/candidates");
     return res.data;
   },
 
-  getStaffUsers: async(): Promise<User[]> => {
-    const res = await api.get("/users/staff");
+  getLecturers: async(): Promise<User[]> => {
+    const res = await api.get("/users/lecturers");
     return res.data;
   }
 }
@@ -67,14 +69,5 @@ export const authApi = {
     const res = await api.post("/logout");
     return res.data;
   },
-
-  // getCurrentUser: async(): Promise<User|null> => {
-  //   try{
-  //     const res = await api.get("/auth/current-user");
-  //     return res.data;
-  //   }catch{
-  //     return null;
-  //   }
-  // }
 } 
   

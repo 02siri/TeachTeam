@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Button, Input, FormControl, useToast, FormLabel, Box, Text, Heading, InputGroup, InputRightElement, Flex, Link} from "@chakra-ui/react";
+import { Button, Input, FormControl, useToast, FormLabel, Box, Text, Heading, InputGroup, InputRightElement, Flex, Link, Select} from "@chakra-ui/react";
 import { motion , useInView } from "framer-motion";
 import { useRouter } from "next/router";
 import {userApi,} from "../services/api";
@@ -38,7 +38,8 @@ interface NewUser{
   lastName: string,
   username: string,
   email: string,
-  password: string
+  password: string,
+  userType: "Candidate" | "Lecturer" | "Admin",
 }
 export default function SignUp(){
   const [newUser, setNewUser] = useState<NewUser>({
@@ -47,6 +48,7 @@ export default function SignUp(){
     username: "",
     email: "",
     password: "",
+    userType: "Admin",
   });
 
   // State for form validation errors
@@ -59,7 +61,7 @@ export default function SignUp(){
   const router = useRouter();
   const toast = useToast();   
   const [error, setError] = useState("");
-  const [, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const registerRef = useRef(null);
   const isInView = useInView(registerRef, {once:true});
 
@@ -80,7 +82,7 @@ export default function SignUp(){
         return hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && isLongEnough;
     }
 
-    const handleInputChange = (e:React.ChangeEvent<HTMLInputElement>)=>{
+    const handleInputChange = (e:React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)=>{
         const{name, value} = e.target;
 
         setNewUser((prev)=>({
@@ -144,7 +146,7 @@ if(!hasErrors){
               isClosable: true,
               });
             //router.push("/tutor-dashboard");
-      setNewUser({ firstName: "", lastName: "", username: "", email: "", password: "" });
+      setNewUser({ firstName: "", lastName: "", username: "", email: "", password: "" , userType: "Admin"});
       router.push("/login");
       console.log("User registered successfully: " , response);
       
@@ -279,7 +281,7 @@ if(!hasErrors){
 
                 <Heading as = "h2" size = "lg" color = "#0E4C92" textAlign = "center" mb= {6}>Sign Up</Heading>     
                 
-                    {/* Login form with validation */}
+                    {/* Register form with validation */}
                 <form onSubmit={handleSubmit}>
                 {["firstName", "lastName", "username"].map((field) => {
                     const label = field.replace(/([A-Z])/g, ' $1').trim();
@@ -326,9 +328,27 @@ if(!hasErrors){
                   />
                   {errors.password && <Text color="red.300">{errors.password}</Text>}
                 </FormControl>
+                
+                <FormControl isInvalid={!!errors.email} isRequired mb={4}>
+                  <FormLabel color = "#0E4C92" fontWeight = "bold">Role</FormLabel>
+                  <Select
+                    name="type"
+                    value={newUser.userType}
+                    onChange={handleInputChange}
+                    bg = "gray.100"
+                    color = "black"
+                    focusBorderColor="blue.400"
+                    placeholder = "Select Type of User"
+                  >
+                  <option>Candidate</option>
+                  <option>Lecturer</option>
+                  <option>Admin</option>
+                </Select>
+                </FormControl>
+
 
                 {error && <Text color="red.500">{error}</Text>} 
-                {/* Sign In button with hover animation */}
+                {/* Register button with hover animation */}
                 <motion.div
                  whileHover= {{scale: 1.03}} // Slightly enlarge on hover
                  whileTap = {{scale: 0.97}} // Slightly shrink on click
@@ -351,11 +371,13 @@ if(!hasErrors){
                  rounded="full"
                  onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
                  onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
+                 isLoading = {isSubmitting}
+                 disabled = {isSubmitting}
                  >
                 {/* Background animation layer */}
                 <span className ="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] transition-all duration-300 group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full"></span>
                 {/* Button text layer */}
-                <span className="relative z-10">Sign Up</span> 
+                <span className="relative z-10">Register</span> 
                 </Button>
                 </motion.div>
 

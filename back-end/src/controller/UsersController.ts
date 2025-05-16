@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Users } from "../entity/Users";
-import { Like } from "typeorm";
+import { Equal } from "typeorm";
 
 export class UsersController {
 
@@ -10,7 +10,7 @@ private usersRepository = AppDataSource.getRepository(Users);
 // Creates a new user in the database
   async createUser(request: Request, response: Response) {
     //dateOfJoining not in request body - automatically set by @CreateDateColumn declaration
-    const { firstName, lastName, username, email, password } = request.body;
+    const { firstName, lastName, username, email, password, userType, isBlocked } = request.body;
 
     try{
       const existingUser = await this.usersRepository.findOneBy({email});
@@ -25,7 +25,9 @@ private usersRepository = AppDataSource.getRepository(Users);
       lastName,
       email,
       username,
-      password, //will be hashed by @BeforeInsert hook
+      password, //will be hashed by @BeforeInsert hook,
+      userType,
+      isBlocked,
     });
 
       const savedUser = await this.usersRepository.save(user);
@@ -52,15 +54,15 @@ async fetchAllUsers(request: Request, response: Response) {
   }
 
 
-// Retrieves only students
-async fetchStudentUsers(request: Request, response: Response){
+// Retrieves only candidates
+async fetchCandidates(request: Request, response: Response){
    try{
-    const studentUsers = await this.usersRepository.find({
+    const candidates = await this.usersRepository.find({
     where:{
-        email: Like('%@student.rmit.edu.au'),
+        userType: Equal('candidate'),
     },
    });
-   const protectedUsers = studentUsers.map(({password, ...rest}) => rest);
+   const protectedUsers = candidates.map(({password, ...rest}) => rest);
    return response.json(protectedUsers);
 } catch(error){
     return response
@@ -69,15 +71,15 @@ async fetchStudentUsers(request: Request, response: Response){
 }
 }
 
-// Retrieves only staff
-async fetchStaffUsers(request: Request, response: Response){
+// Retrieves only lecturers
+async fetchLecturers(request: Request, response: Response){
     try{
-     const staffUsers = await this.usersRepository.find({
+     const lecturers = await this.usersRepository.find({
      where:{
-         email: Like('%@staff.rmit.edu.au'),
+        userType: Equal('lecturer'),
      },
     });
-    const protectedUsers = staffUsers.map(({password, ...rest}) => rest);
+    const protectedUsers = lecturers.map(({password, ...rest}) => rest);
     return response.json(protectedUsers);
  }catch(error){
     return response

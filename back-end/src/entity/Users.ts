@@ -21,6 +21,12 @@ export class Users {
   @Column()
   password: string
 
+  @Column()
+  userType : string
+
+  @Column({default : false})
+  isBlocked : boolean
+
   @CreateDateColumn({type: "timestamp"})
   dateOfJoining: Date
 
