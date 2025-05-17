@@ -353,7 +353,7 @@ const TutorDashboard = () => {
                 _hover={{ bg: "blue.50" }}
                 whiteSpace="normal"
                 >
-                  <Text fontWeight="medium">{course.id} — {course.name}</Text>
+                  <Text fontWeight="medium">{course.id}: {course.name}</Text>
                   </Checkbox>
                   </span>
                   </Tooltip>

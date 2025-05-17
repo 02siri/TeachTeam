@@ -38,10 +38,10 @@ export class Users {
 
   @Column({
     type: "enum",
-    enum: ["candidate", "lecturer", "admin"],
+    enum: ["candidate", "lecturer"],
     default: "candidate"
   })
-  userType: "candidate" | "lecturer" | "admin";
+  userType: "candidate" | "lecturer";
 
   @CreateDateColumn({type: "timestamp"})
   dateOfJoining: Date
