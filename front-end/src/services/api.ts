@@ -25,6 +25,9 @@ export const tutorApi = {
       const res = await api.get(`/apply?email=${email}`);
       return res.data;
     },    
+    getCourses: async () => {
+      const res = await api.get("/courses");
+      return res.data;},
 };
 
 export interface User{

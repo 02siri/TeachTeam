@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo} from "react";
+import { useState, useEffect} from "react";
 import React from "react";
 import {
   Box,
@@ -16,7 +16,8 @@ import {
   HStack,
   Image,
   Flex,
-  useToast
+  useToast,
+  Tooltip
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthLogic";
@@ -33,17 +34,24 @@ const MotionVStack = motion(VStack);
 const TutorDashboard = () => {
   const {currentUserEmail} = useAuth();   //get the currently authenticated user..
 
+  type CourseOption = {
+    id: string;
+    name: string;
+    semester: string;
+    description: string;
+  };
+
   //state variables to manage form data..
   //role, courses, previous roles, availability, skills, academic credentials, custom skills..
   //and errors..
   const [role, setRole] = useState<string>(""); 
-  const [courses, setCourses] = useState<{ id: string; name: string }[]>([]);
+  const [courseOptions, setCourseOptions] = useState<CourseOption[]>([]);
   const [previousRoles, setPreviousRoles] = useState([""]);
   const [availability, setAvailability] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [academicCred, setAcademicCred] = useState([""]);
   const [customSkills, setCustomSkills] = useState<string[]>([]);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});    //validation errors..
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});    
   const [existingApplication, setExistingApplication] = useState<null | { role: string }>(null);
 
 
@@ -55,7 +63,7 @@ const TutorDashboard = () => {
   const validateStep = () => {  
     const newErrors: { [key: string]: string } = {};
     if (!role) newErrors.role = "Please select one role";
-    if (courses.length === 0) newErrors.courses = "Select at least one course";
+    if (courseOptions.length === 0) newErrors.courses = "Select at least one course";
     if (previousRoles.some((r) => r.trim() === "")) newErrors.previousRoles = "Enter previous role";
     if (!availability) newErrors.availability = "Select availability";
     if (skills.length === 0) newErrors.skills = "Select at least one skill";
@@ -75,19 +83,29 @@ const TutorDashboard = () => {
   
 
 
-  //available course options..
-  //each course has an id and a name..
-  const courseOptions = useMemo(() => [
-    { id: "COSC2758", name: "Full Stack Development" },
-    { id: "COSC2673", name: "Machine Learning" },
-    { id: "COSC2391", name: "Further Programming" },
-    { id: "COSC2123", name: "Algorithms and Analysis" },
-    { id: "COSC3045", name: "Essentials of Computing" },
-    { id: "COSC2299", name: "SE Process & Tools" },
-    { id: "COSC1085", name: "Software Testing" },
-    { id: "COSC2625", name: "Intro to Cybersecurity" },
-  ], []);
-
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const coursesFromDB = (await tutorApi.getCourses()) ?? [];
+        const formatted: CourseOption[] = coursesFromDB.map((course: {
+          courseCode: string;
+          courseName: string;
+          semester: string;
+          description: string;
+        }) => ({
+          id: course.courseCode,
+          name: course.courseName,
+          semester: course.semester,
+          description: course.description,
+        }));
+        setCourseOptions(formatted);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      }
+    }; 
+    fetchCourses();
+  }, []);
+  
 
   //get the username from the email..
   //this is done by splitting the email at the '@' symbol and taking the first part..
@@ -129,7 +147,7 @@ const TutorDashboard = () => {
       const applicationData = {
         email: currentUserEmail,
         role: [role],
-        courses: courses.map((c) => c.id),
+        courses: courseOptions.map((c) => c.id),
         previousRoles,
         availability,
         skills: mergedSkills,
@@ -300,12 +318,12 @@ const TutorDashboard = () => {
               {/*Checkbox group for course selection*/}
               <CheckboxGroup
               colorScheme="blue"
-              value={courses.map((c) => c.id)}
+              value={courseOptions.map((c) => c.id)}
               onChange={(selectedIds) => {
                 const selectedCourses = courseOptions.filter((course) =>
                   selectedIds.includes(course.id)
               );
-              setCourses(selectedCourses);
+              setCourseOptions(selectedCourses);
               }}
               >
                 {/*Simple grid for course options*/}
@@ -313,12 +331,31 @@ const TutorDashboard = () => {
                 {/*the checkbox is checked if the course is selected*/}
                 {/*the checkbox group allows multiple selections*/}
                 <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4} px={2}>
-                  {courseOptions.map((course) => (
-                    <Checkbox key={course.id} value={course.id}>
-                      {course.id} - {course.name}
-                      </Checkbox>
-                    ))}
-                    </SimpleGrid>
+                {courseOptions.map((course) => (
+
+    <Tooltip
+      key={course.id}
+      label={
+        <Box>
+          <Text fontWeight="bold">Semester: {course.semester}</Text>
+          <Text>Description: {course.description}</Text>
+        </Box>
+      }
+      aria-label={`Details for ${course.id}`}
+      hasArrow
+      bg="gray.700"
+      color="white"
+      p={3}
+      rounded="md"
+      maxW="300px"
+    >
+      <Checkbox value={course.id}>
+        {course.id} - {course.name}
+      </Checkbox>
+    </Tooltip>
+  ))}
+</SimpleGrid>
+
                     </CheckboxGroup>
 
                   {errors.courses && (

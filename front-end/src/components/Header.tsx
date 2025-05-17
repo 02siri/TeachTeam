@@ -3,8 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthLogic";
 import { useRouter } from "next/router";
-import { Head } from "next/document";
-import { Button } from "@chakra-ui/react";
+//import { Head } from "next/document";
+//import { Button } from "@chakra-ui/react";
 
 //header component..
 //this component is responsible for rendering the header of the page....

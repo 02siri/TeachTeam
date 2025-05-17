@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import{ Box, Heading, Text, useToast, VStack} from "@chakra-ui/react";
+import{ Box, Text, useToast} from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import { userApi } from "@/services/api";
 import { useAuth } from "@/context/AuthLogic";
