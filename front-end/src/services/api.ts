@@ -28,6 +28,14 @@ export const tutorApi = {
     getCourses: async () => {
       const res = await api.get("/courses");
       return res.data;},
+
+    submitSkills: async (email: string, skills: string[], customSkills: string[]) => {
+      await api.post("/skills", {
+        email,
+        skills: [...skills.filter(s => s !== "Other"), ...customSkills.filter(s => s.trim() !== "")],
+      });
+}
+
 };
 
 export interface User{

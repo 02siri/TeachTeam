@@ -64,7 +64,7 @@ const TutorDashboard = () => {
   const validateStep = () => {  
     const newErrors: { [key: string]: string } = {};
     if (!role) newErrors.role = "Please select one role";
-    if (courseOptions.length === 0) newErrors.courses = "Select at least one course";
+    if (courses.length === 0) newErrors.courses = "Select at least one course";
     if (previousRoles.some((r) => r.trim() === "")) newErrors.previousRoles = "Enter previous role";
     if (!availability) newErrors.availability = "Select availability";
     if (skills.length === 0) newErrors.skills = "Select at least one skill";
@@ -159,6 +159,7 @@ const TutorDashboard = () => {
   
       try {
         await tutorApi.submitApplication(applicationData); 
+        await tutorApi.submitSkills(currentUserEmail, skills, customSkills);
         toast({
           position: "top",
           duration: 2000,

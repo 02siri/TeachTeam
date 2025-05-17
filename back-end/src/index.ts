@@ -6,6 +6,7 @@ import tutorRoutes from "./routes/tutor.routes";
 import userRoutes from "./routes/users.routes";
 import authRoutes from "./routes/auth.routes";
 import courseRoutes from "./routes/course.routes";
+import skillRoutes from "./routes/skills.routes";
 import cors from "cors";
 import { insertDefaultCourses } from "./services/insertDefaultCourses";
 
@@ -23,6 +24,7 @@ app.use("/api", tutorRoutes);
 app.use("/api", userRoutes);
 app.use("/api", authRoutes);
 app.use("/api", courseRoutes);
+app.use("/api", skillRoutes);
 
 
 AppDataSource.initialize()
