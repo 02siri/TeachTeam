@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Button, Input, FormControl, useToast, FormLabel, Box, Text, Heading, InputGroup, InputRightElement, Flex, Link, Select} from "@chakra-ui/react";
+import { Button, Input, FormControl, useToast, FormLabel, Box, Text, Heading, InputGroup, InputRightElement, Flex, Link} from "@chakra-ui/react";
 import { motion , useInView } from "framer-motion";
 import { useRouter } from "next/router";
 import {userApi,} from "../services/api";
@@ -39,7 +39,6 @@ interface NewUser{
   username: string,
   email: string,
   password: string,
-  userType: "Candidate" | "Lecturer" | "Admin",
 }
 export default function SignUp(){
   const [newUser, setNewUser] = useState<NewUser>({
@@ -48,7 +47,6 @@ export default function SignUp(){
     username: "",
     email: "",
     password: "",
-    userType: "Admin",
   });
 
   // State for form validation errors
@@ -146,7 +144,7 @@ if(!hasErrors){
               isClosable: true,
               });
             //router.push("/tutor-dashboard");
-      setNewUser({ firstName: "", lastName: "", username: "", email: "", password: "" , userType: "Admin"});
+      setNewUser({ firstName: "", lastName: "", username: "", email: "", password: "",});
       router.push("/login");
       console.log("User registered successfully: " , response);
       
@@ -328,24 +326,6 @@ if(!hasErrors){
                   />
                   {errors.password && <Text color="red.300">{errors.password}</Text>}
                 </FormControl>
-                
-                <FormControl isInvalid={!!errors.email} isRequired mb={4}>
-                  <FormLabel color = "#0E4C92" fontWeight = "bold">Role</FormLabel>
-                  <Select
-                    name="type"
-                    value={newUser.userType}
-                    onChange={handleInputChange}
-                    bg = "gray.100"
-                    color = "black"
-                    focusBorderColor="blue.400"
-                    placeholder = "Select Type of User"
-                  >
-                  <option>Candidate</option>
-                  <option>Lecturer</option>
-                  <option>Admin</option>
-                </Select>
-                </FormControl>
-
 
                 {error && <Text color="red.500">{error}</Text>} 
                 {/* Register button with hover animation */}

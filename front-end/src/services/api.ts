@@ -34,7 +34,6 @@ export interface User{
   username: string,
   email: string,
   isBlocked: boolean,
-  userType: "Candidate" | "Lecturer" | "Admin" ,
   dateOfJoining: string
 }
 

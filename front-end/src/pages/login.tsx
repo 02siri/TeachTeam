@@ -76,7 +76,7 @@ export default function LoginPage(){
     const toast = useToast(); // For showing toast notifications
     const loginRef = useRef(null); // Reference for animation trigger
     const isInView = useInView(loginRef, {once: true}); // Animation trigger when component comes into view
-
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Email validation, checks for RMIT student or staff email format
     const validateEmail = (email: string) => {
@@ -134,9 +134,11 @@ export default function LoginPage(){
     
         // If no validation errors, attempt login
         if(!hasErrors){
+        setIsSubmitting(true);
         const success = await login({email: formData.email, password: formData.password});
 
         if(success){
+             
                 // Show success toast and redirect on successful login
                 toast({
                     title: "Your Login was Successful ! ",
@@ -336,7 +338,8 @@ export default function LoginPage(){
                             rounded="full"
                             onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
                             onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
-                            >
+                            isLoading = {isSubmitting}
+                            disabled = {isSubmitting}>
                                 
                             {/* Background animation layer */}
                             <span className ="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] transition-all duration-300 group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full"></span>

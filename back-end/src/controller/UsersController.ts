@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Users } from "../entity/Users";
-import { Equal } from "typeorm";
+import { Like } from "typeorm";
 
 export class UsersController {
 
@@ -10,7 +10,7 @@ private usersRepository = AppDataSource.getRepository(Users);
 // Creates a new user in the database
   async createUser(request: Request, response: Response) {
     //dateOfJoining not in request body - automatically set by @CreateDateColumn declaration
-    const { firstName, lastName, username, email, password, userType, isBlocked } = request.body;
+    const { firstName, lastName, username, email, password, isBlocked } = request.body;
 
     try{
       const existingUser = await this.usersRepository.findOneBy({email});
@@ -26,7 +26,6 @@ private usersRepository = AppDataSource.getRepository(Users);
       email,
       username,
       password, //will be hashed by @BeforeInsert hook,
-      userType,
       isBlocked,
     });
 
@@ -59,7 +58,7 @@ async fetchCandidates(request: Request, response: Response){
    try{
     const candidates = await this.usersRepository.find({
     where:{
-        userType: Equal('candidate'),
+        email: Like("student.rmit.edu.au"),
     },
    });
    const protectedUsers = candidates.map(({password, ...rest}) => rest);
@@ -76,7 +75,7 @@ async fetchLecturers(request: Request, response: Response){
     try{
      const lecturers = await this.usersRepository.find({
      where:{
-        userType: Equal('lecturer'),
+        email: Like("staff.rmit.edu.au"),
      },
     });
     const protectedUsers = lecturers.map(({password, ...rest}) => rest);
