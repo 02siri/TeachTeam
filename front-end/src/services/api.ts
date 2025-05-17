@@ -17,10 +17,17 @@ export interface Tutor {
 }
 
 export const tutorApi = {
-    submitApplication: async (applicationData: Omit<Tutor, "id">) => {
-      const res = await api.post("/apply", applicationData);
-      return res.data;
-    },
+  submitApplication: async (applicationData: {
+    email: string;
+    role: string[];
+    courses: string[];
+    previousRoles: string[];
+    availability: string;
+    timestamp: string;
+  }) => {
+    const res = await api.post("/apply", applicationData);
+    return res.data;
+  },  
     getApplication: async (email: string) => {
       const res = await api.get(`/apply?email=${email}`);
       return res.data;
@@ -34,7 +41,11 @@ export const tutorApi = {
         email,
         skills: [...skills.filter(s => s !== "Other"), ...customSkills.filter(s => s.trim() !== "")],
       });
-}
+    },
+    submitCredentials: async (email: string, credentials: { qualification: string; institution: string; year: number }[]) => {
+      return await api.post("/credentials", { email, credentials });
+    },
+    
 
 };
 

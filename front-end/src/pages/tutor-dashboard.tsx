@@ -31,6 +31,15 @@ import { tutorApi } from "../services/api";
 const MotionBox = motion(Box); 
 const MotionVStack = motion(VStack); 
 
+export interface Tutor {
+  email: string;
+  role: string[];
+  courses: string[];
+  previousRoles: string[];
+  availability: string;
+  timestamp: string;
+}
+
 const TutorDashboard = () => {
   const {currentUserEmail} = useAuth();   //get the currently authenticated user..
 
@@ -40,6 +49,7 @@ const TutorDashboard = () => {
     semester: string;
     description: string;
   };
+  
 
   //state variables to manage form data..
   //role, courses, previous roles, availability, skills, academic credentials, custom skills..
@@ -50,7 +60,9 @@ const TutorDashboard = () => {
   const [previousRoles, setPreviousRoles] = useState([""]);
   const [availability, setAvailability] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
-  const [academicCred, setAcademicCred] = useState([""]);
+  const [academicCred, setAcademicCred] = useState([
+    { qualification: "", institution: "", year: "" }
+  ]);  
   const [customSkills, setCustomSkills] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});    
   const [existingApplication, setExistingApplication] = useState<null | { role: string }>(null);
@@ -68,7 +80,9 @@ const TutorDashboard = () => {
     if (previousRoles.some((r) => r.trim() === "")) newErrors.previousRoles = "Enter previous role";
     if (!availability) newErrors.availability = "Select availability";
     if (skills.length === 0) newErrors.skills = "Select at least one skill";
-    if (academicCred.some((c) => c.trim() === "")) newErrors.academicCred = "Enter academic credential";
+    if (academicCred.some((c) => !c.qualification || !c.institution || !c.year)) {
+      newErrors.academicCred = "Enter all academic fields";
+    }    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0; 
   };
@@ -139,6 +153,14 @@ const TutorDashboard = () => {
       ? [...skills.filter((s) => s !== "Other"), ...customSkills.filter((s) => s.trim() !== "")]
       : skills;
 
+  const academicCredentialsPayload = academicCred
+  .filter((c) => c.qualification && c.institution && c.year)
+  .map((c) => ({
+    qualification: c.qualification.trim(),
+    institution: c.institution.trim(),
+    year: parseInt(c.year)
+  }));
+    
 
 
 
@@ -152,14 +174,15 @@ const TutorDashboard = () => {
         previousRoles,
         availability,
         skills: mergedSkills,
-        academicCred,
-        customSkills,
+        academicCred: academicCredentialsPayload,
         timestamp: new Date().toISOString(),
       };
   
       try {
         await tutorApi.submitApplication(applicationData); 
         await tutorApi.submitSkills(currentUserEmail, skills, customSkills);
+        await tutorApi.submitCredentials(currentUserEmail, academicCredentialsPayload);
+
         toast({
           position: "top",
           duration: 2000,
@@ -596,43 +619,40 @@ const TutorDashboard = () => {
               {academicCred.map((cred, index) => (
                 <HStack key={index} spacing={3} mb={3}>
                   <Input
-                  placeholder="e.g. Bachelor of Computer Science"
-                  value={cred}
+                  placeholder="Qualification(e.g. Diploma)"
+                  value={cred.qualification}
                   onChange={(e) => {
-                    const updatedCreds = [...academicCred];
-                    updatedCreds[index] = e.target.value;
-                    setAcademicCred(updatedCreds);
+                    const updated = [...academicCred];
+                    updated[index].qualification = e.target.value;
+                    setAcademicCred(updated);
                   }}
-                  bg="white"
-                  borderColor="gray.300"
-                  focusBorderColor="blue.500"
                   />
-                  <Button
-                  colorScheme="blue"
-                  variant="outline"
-                  onClick={() => setAcademicCred([...academicCred, ""])}
-                  >
-                    +
-                    </Button>
+                  <Input
+                   placeholder="Institution(e.g. RMIT)"
+                   value={cred.institution}
+                   onChange={(e) => {
+                    const updated = [...academicCred];
+                    updated[index].institution = e.target.value;
+                    setAcademicCred(updated);
+                  }}
+                  />
+                   <Input
+                    placeholder="Year (e.g. 2025)"
+                    type="number"
+                    value={cred.year}
+                    onChange={(e) => {
+                      const updated = [...academicCred];
+                      updated[index].year = e.target.value;
+                      setAcademicCred(updated);
+                    }}
+                    />
+                    <Button onClick={() => setAcademicCred([...academicCred, { qualification: "", institution: "", year: "" }])}>+</Button>
                     {academicCred.length > 1 && (
-                      <Button
-                      colorScheme="red"
-                      variant="outline"
-                      onClick={() => {
-                        const updatedCreds = academicCred.filter((_, i) => i !== index);
-                        setAcademicCred(updatedCreds);
-                      }}
-                      >
-                        -
-                    </Button>
-                  )}
-                  </HStack>
-                ))}
-                {errors.academicCred && (
-                  <Text color="red.500" fontSize="sm" mt={2}>
-                    {errors.academicCred}
-                     </Text>
-                    )}
+                      <Button colorScheme="red" onClick={() => setAcademicCred(academicCred.filter((_, i) => i !== index))}>-</Button>
+                       )}
+                       </HStack>
+                      ))}
+
                       </FormControl>
 
                 {/* Final Submit Button */}

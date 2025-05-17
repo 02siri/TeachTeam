@@ -9,6 +9,7 @@ import courseRoutes from "./routes/course.routes";
 import skillRoutes from "./routes/skills.routes";
 import cors from "cors";
 import { insertDefaultCourses } from "./services/insertDefaultCourses";
+import academicRoutes from "./routes/academic.routes";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use("/api", userRoutes);
 app.use("/api", authRoutes);
 app.use("/api", courseRoutes);
 app.use("/api", skillRoutes);
+app.use("/api", academicRoutes);
 
 
 AppDataSource.initialize()
