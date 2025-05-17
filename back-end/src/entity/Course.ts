@@ -1,4 +1,3 @@
-// src/entities/Course.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
 import { Application } from "./Application";
 

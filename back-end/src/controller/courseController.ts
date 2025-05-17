@@ -4,7 +4,6 @@ import { Course } from "../entity/Course";
 
 const courseRepo = AppDataSource.getRepository(Course);
 
-// 🔹 GET all courses
 export const getAllCourses = async (req: Request, res: Response) => {
     try {
       const courses = await AppDataSource.getRepository(Course).find();
@@ -18,8 +17,6 @@ export const getAllCourses = async (req: Request, res: Response) => {
     }
   };
   
-
-// 🔹 GET course by ID
 export const getCourseById = async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
   try {
@@ -35,7 +32,6 @@ export const getCourseById = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 POST create new course
 export const createCourse = async (req: Request, res: Response) => {
   const { courseCode, courseName, semester, description } = req.body;
   try {
@@ -51,7 +47,6 @@ export const createCourse = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 PUT update course
 export const updateCourse = async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
   const { courseCode, courseName, semester, description } = req.body;
@@ -76,7 +71,7 @@ export const updateCourse = async (req: Request, res: Response) => {
   }
 };
 
-// 🔹 DELETE course
+
 export const deleteCourse = async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
   try {
