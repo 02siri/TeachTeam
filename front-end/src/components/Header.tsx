@@ -101,7 +101,7 @@ const Header = () => {
                       </span>
 
                       <button onClick={handleLogout} 
-                      className="px-4 py-2 rounded-full border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300 shadow-sm hover:shadow-[0_0_10px_rgba(255,0,0,0.5)]">
+                      className="px-4 py-2 rounded-full border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300 shadow-sm hover:shadow-[0_0_10px_rgba(255,0,0,0.5)] cursor-pointer">
                         Logout
                       </button>
                     </div>

@@ -312,7 +312,7 @@ const Home = () => {
             
             {currentUserEmail.endsWith("@student.rmit.edu.au") ? (
               <Link href="/tutor-dashboard">
-              <button className="relative inline-block text-white font-semibold py-3 px-8 rounded-full transition duration-300 group overflow-hidden shadow-lg border border-white"
+              <button className="relative inline-block text-white font-semibold py-3 px-8 rounded-full transition duration-300 group overflow-hidden shadow-lg border border-white cursor-pointer"
                 style={{
                   boxShadow: "0 0 15px rgba(255, 255, 255, 0.6)",
                 }}
