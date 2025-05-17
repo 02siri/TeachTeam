@@ -65,7 +65,7 @@ const TutorDashboard = () => {
   ]);  
   const [customSkills, setCustomSkills] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});    
-  const [existingApplication, setExistingApplication] = useState<null | { role: string }>(null);
+  const [existingApplication, ] = useState<null | { role: string }>(null);
 
 
 
@@ -126,24 +126,24 @@ const TutorDashboard = () => {
   //this is done by splitting the email at the '@' symbol and taking the first part..
   // const username = user?.email?.split("@")[0];  
 
-  const email = currentUserEmail;
+  //const email = currentUserEmail;
 
-  useEffect(() => {
-    const fetchApplication = async () => {
-      if (!email) return;
+  // useEffect(() => {
+  //   const fetchApplication = async () => {
+  //     if (!email) return;
   
-      try {
-        const res = await tutorApi.getApplication(email);
-        if (res?.data) {
-          setExistingApplication(res.data);
-        }
-      } catch (err) {
-        console.error("Error fetching application:", err);
-      }
-    };
+  //     try {
+  //       const res = await tutorApi.getApplication(email);
+  //       if (res?.data) {
+  //         setExistingApplication(res.data);
+  //       }
+  //     } catch (err) {
+  //       console.error("Error fetching application:", err);
+  //     }
+  //   };
   
-    fetchApplication();
-  }, [email]);
+  //   fetchApplication();
+  // }, [email]);
   
 
 
@@ -179,7 +179,12 @@ const TutorDashboard = () => {
       };
   
       try {
-        await tutorApi.submitApplication(applicationData); 
+        await tutorApi.submitApplication({
+          ...applicationData,
+          skills: mergedSkills,
+          academicCred: academicCredentialsPayload
+        });
+        
         await tutorApi.submitSkills(currentUserEmail, skills, customSkills);
         await tutorApi.submitCredentials(currentUserEmail, academicCredentialsPayload);
 

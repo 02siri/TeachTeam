@@ -17,7 +17,7 @@ export class Application {
   sessionType: "tutor" | "lab";
 
   @Column()
-  availability: string;
+  availability: "Part-Time" | "Full-Time";
 
   @Column()
   status: "pending" | "approved" | "rejected";

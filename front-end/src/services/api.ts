@@ -24,13 +24,11 @@ export const tutorApi = {
     previousRoles: string[];
     availability: string;
     timestamp: string;
+    skills: string[];
+    academicCred: { qualification: string; institution: string; year: number }[];
   }) => {
-    const res = await api.post("/apply", applicationData);
+    const res = await api.post("/application", applicationData);
     return res.data;
-  },  
-    getApplication: async (email: string) => {
-      const res = await api.get(`/apply?email=${email}`);
-      return res.data;
     },    
     getCourses: async () => {
       const res = await api.get("/courses");
