@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, BeforeInsert } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, BeforeInsert, BeforeUpdate } from "typeorm";
 import * as bcrypt from "bcryptjs";
 
 @Entity()
@@ -28,6 +28,7 @@ export class Users {
   dateOfJoining: Date
 
   @BeforeInsert()
+  @BeforeUpdate()
   async hashPassword(){
     this.password = await bcrypt.hash(this.password,10);
   }

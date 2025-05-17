@@ -12,11 +12,49 @@ private usersRepository = AppDataSource.getRepository(Users);
     //dateOfJoining not in request body - automatically set by @CreateDateColumn declaration
     const { firstName, lastName, username, email, password, isBlocked } = request.body;
 
+
+     const validateEmail = (email: string) => {
+        const emailRegex = /^[^\s@]+@(student|staff)\.rmit\.edu\.au$/;
+        return emailRegex.test(email);
+    };
+  
+    // Password validation implementation checking for security requirements
+    const validatePassword = (password : string) => {
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+        const isLongEnough = password.length >= 10;
+        
+        return hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && isLongEnough;
+    }
+
+
+    if (!firstName || !lastName || !email || !username || !password){
+      return response.status(400).json({
+        message: "All fields are required",
+      })
+    }
+
+    if(!validateEmail){
+      return response.status(400).json({
+        message: "Email must end in '@rmit.edu.au",
+      })
+    }
+
+    if(!validatePassword){
+      return response.status(400).json({
+        message: "Password must have atleast 10 characters, include uppercase, lowercase, number and special character.",
+      })
+    }
+
+    
+
     try{
       const existingUser = await this.usersRepository.findOneBy({email});
       if(existingUser){
         return response.status(409).json({
-          message: "Email already exists"
+          message: "Email already exists. Please use a different one."
         });
       }
     
@@ -35,7 +73,7 @@ private usersRepository = AppDataSource.getRepository(Users);
     }catch (error) {
       return response
         .status(400)
-        .json({ message: "Error creating user", error });
+        .json({ message: "Failed to create user", error });
     }
   }
 
@@ -58,7 +96,7 @@ async fetchCandidates(request: Request, response: Response){
    try{
     const candidates = await this.usersRepository.find({
     where:{
-        email: Like("student.rmit.edu.au"),
+        email: Like("%@student.rmit.edu.au"),
     },
    });
    const protectedUsers = candidates.map(({password, ...rest}) => rest);
@@ -75,7 +113,7 @@ async fetchLecturers(request: Request, response: Response){
     try{
      const lecturers = await this.usersRepository.find({
      where:{
-        email: Like("staff.rmit.edu.au"),
+        email: Like("%@staff.rmit.edu.au"),
      },
     });
     const protectedUsers = lecturers.map(({password, ...rest}) => rest);
