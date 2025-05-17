@@ -46,6 +46,7 @@ const TutorDashboard = () => {
   //and errors..
   const [role, setRole] = useState<string>(""); 
   const [courseOptions, setCourseOptions] = useState<CourseOption[]>([]);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
   const [previousRoles, setPreviousRoles] = useState([""]);
   const [availability, setAvailability] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
@@ -315,55 +316,56 @@ const TutorDashboard = () => {
             >
              Which course(s) would you like to support?
               </FormLabel>
-              {/*Checkbox group for course selection*/}
               <CheckboxGroup
               colorScheme="blue"
-              value={courseOptions.map((c) => c.id)}
+              value={courses.map((c) => c.id)} 
               onChange={(selectedIds) => {
                 const selectedCourses = courseOptions.filter((course) =>
                   selectedIds.includes(course.id)
               );
-              setCourseOptions(selectedCourses);
+              setCourses(selectedCourses); 
               }}
               >
-                {/*Simple grid for course options*/}
-                {/*each course option is a checkbox with the course id and name*/}
-                {/*the checkbox is checked if the course is selected*/}
-                {/*the checkbox group allows multiple selections*/}
-                <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4} px={2}>
+              <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4} px={2}>
                 {courseOptions.map((course) => (
-
-    <Tooltip
-      key={course.id}
-      label={
-        <Box>
-          <Text fontWeight="bold">Semester: {course.semester}</Text>
-          <Text>Description: {course.description}</Text>
-        </Box>
-      }
-      aria-label={`Details for ${course.id}`}
-      hasArrow
-      bg="gray.700"
-      color="white"
-      p={3}
-      rounded="md"
-      maxW="300px"
-    >
-      <Checkbox value={course.id}>
-        {course.id} - {course.name}
-      </Checkbox>
-    </Tooltip>
-  ))}
-</SimpleGrid>
-
-                    </CheckboxGroup>
-
-                  {errors.courses && (
-                    <Text color="red.500" fontSize="sm" mt={3}>
-                      {errors.courses}
-                      </Text>
-                    )}
-                      </FormControl>
+                <Tooltip
+                key={course.id}
+                label={
+                <Box>
+                  <Text fontWeight="bold">Semester: {course.semester}</Text>
+                  <Text>Description: {course.description}</Text>
+                  </Box>
+                }
+                placement="bottom"
+                hasArrow
+                bg="gray.700"
+                color="white"
+                p={3}
+                rounded="md"
+                maxW="300px"
+                >
+                <span>
+                <Checkbox
+                value={course.id}
+                py={2}
+                px={3}
+                borderRadius="md"
+                _hover={{ bg: "blue.50" }}
+                whiteSpace="normal"
+                >
+                  <Text fontWeight="medium">{course.id} — {course.name}</Text>
+                  </Checkbox>
+                  </span>
+                  </Tooltip>
+                ))}
+                </SimpleGrid>
+                </CheckboxGroup>
+                {errors.courses && (
+                  <Text color="red.500" fontSize="sm" mt={3}>
+                    {errors.courses}
+                    </Text>
+                  )}
+                  </FormControl>
 
         {/* Step 3: Previous Roles */}
           {/*this step allows the user to enter their previous roles*/}

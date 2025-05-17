@@ -16,22 +16,8 @@ export const getAllCourses = async (req: Request, res: Response) => {
       }
     }
   };
-  
-export const getCourseById = async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
-  try {
-    const course = await courseRepo.findOneBy({ courseID: id });
-    if (!course) return res.status(404).json({ message: "Course not found" });
-    res.json(course);
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      res.status(500).json({ message: "Error retrieving course", error: err.message });
-    } else {
-      res.status(500).json({ message: "Unknown error occurred" });
-    }
-  }
-};
 
+  //might need it for admin will see..
 export const createCourse = async (req: Request, res: Response) => {
   const { courseCode, courseName, semester, description } = req.body;
   try {
@@ -47,6 +33,7 @@ export const createCourse = async (req: Request, res: Response) => {
   }
 };
 
+//might be helpful for admin..
 export const updateCourse = async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
   const { courseCode, courseName, semester, description } = req.body;
@@ -71,7 +58,7 @@ export const updateCourse = async (req: Request, res: Response) => {
   }
 };
 
-
+//might be helpful for admin...
 export const deleteCourse = async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
   try {
