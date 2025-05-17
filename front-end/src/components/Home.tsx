@@ -21,8 +21,6 @@ import { BarChart,
   Legend} from 'recharts';
 
 
-
-
 //home page
 const Home = () => {
 
@@ -75,7 +73,6 @@ const Home = () => {
   const [, setUnselectedApplicants] = useState<Applicant[]>([]);
   const [rankChartData, setRankChartData] = useState<{ name: string; count: number }[]>([]);
   const [selectionPieData, setSelectionPieData] = useState<{ name: string; value: number }[]>([]);
-
 
 
   //effect #1:summarize all tutor application data

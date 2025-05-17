@@ -3,6 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthLogic";
 import { useRouter } from "next/router";
+import { Head } from "next/document";
+import { Button } from "@chakra-ui/react";
 
 //header component..
 //this component is responsible for rendering the header of the page....
@@ -64,6 +66,14 @@ const Header = () => {
             >Home
             </Link>
             </li>
+
+            <li>
+            <Link 
+             href = "/profile"
+             className="px-4 py-2 rounded-full relative text-white transition-all duration-300 hover:text-blue-300 hover:shadow-[0_0_10px_rgba(173,216,230,0.8)]"
+             >Profile
+             </Link>
+             </li>
           {currentUserEmail && (
               <>
               {currentUserEmail.endsWith("@student.rmit.edu.au") && (
@@ -87,6 +97,8 @@ const Header = () => {
               )}
               </>
               )}
+
+
         </ul>
         {/* User authentication buttons */}
         {/* If the user is logged in, a welcome message and logout button are displayed */}

@@ -36,13 +36,13 @@ private usersRepository = AppDataSource.getRepository(Users);
       })
     }
 
-    if(!validateEmail){
+    if(!validateEmail(email)){
       return response.status(400).json({
         message: "Email must end in '@rmit.edu.au",
       })
     }
 
-    if(!validatePassword){
+    if(!validatePassword(password)){
       return response.status(400).json({
         message: "Password must have atleast 10 characters, include uppercase, lowercase, number and special character.",
       })
@@ -124,6 +124,32 @@ async fetchLecturers(request: Request, response: Response){
     .json({message: "Erorr fetching staff users",error})
 }
 }
+
+async fetchUserByEmail(request: Request, response: Response){
+    const {email} = request.params;
+
+    if(!email){
+      return response.status(400).json({
+        message: "Email is required",
+      })
+    }
+    
+    try{
+      const user = await this.usersRepository.findOneBy({email});
+      if(user){
+        const {password, ...protectedUser} = user;
+        return response.status(200).json(protectedUser);
+      }else{
+        return response.status(400).json({
+          message: "User not found",
+        })
+      }
+    }catch(error){
+      return response.status(500).json({
+        message: "Error fetching user by email : ", error,
+      })
+    }
+  }
 }
 //   async one(request: Request, response: Response) {
 //     const id = parseInt(request.params.id);

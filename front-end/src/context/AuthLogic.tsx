@@ -22,11 +22,11 @@ export function AuthProvider(
         //Check if we are running in a browser environment. 
         // If we are, try to get the value associated with the key 'currentUserEmail' from the session storage. 
         // If we are not in a browser environment, return null
-        typeof window!== "undefined" ? sessionStorage.getItem("currentUserEmail") : null
+        typeof window!== "undefined" ? sessionStorage.getItem("CurrentUserEmail") : null
     );  
 
      const [currentUsername , setCurrentUsername] = useState< string | null >(
-        typeof window!== "undefined" ? sessionStorage.getItem("currentUsername") : null
+        typeof window!== "undefined" ? sessionStorage.getItem("CurrentUsername") : null
     );  
     const router = useRouter();
 

@@ -54,6 +54,12 @@ export const userApi = {
   getLecturers: async(): Promise<User[]> => {
     const res = await api.get("/users/lecturers");
     return res.data;
+  },
+
+  getUserByEmail: async (email: string) : Promise<User> => {
+    const res = await api.get(`/users/email/${email}`);
+    return res.data;
+
   }
 }
   
