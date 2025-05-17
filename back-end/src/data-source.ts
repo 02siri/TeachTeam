@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { Tutor } from "./entity/Tutor";
 import { Skills } from "./entity/Skills";
 import { Course } from "./entity/Course";
 import { Application } from "./entity/Application";
@@ -19,7 +18,7 @@ export const AppDataSource = new DataSource({
   // but should be disabled in production to prevent accidental data loss.
   synchronize: true,
   logging: true,
-  entities: [Tutor, Users, Course, AcademicCredential, Application, Skills],
+  entities: [Users, Course, AcademicCredential, Application, Skills],
   migrations: [],
   subscribers: [],
 });

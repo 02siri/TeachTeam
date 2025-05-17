@@ -27,4 +27,7 @@ export class Application {
 
   @Column()
   isSelected: boolean;
+
+  @Column("simple-array")
+  previousRoles: string[];
 }

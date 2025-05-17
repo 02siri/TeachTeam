@@ -2,7 +2,6 @@ import "reflect-metadata";
 import express from "express";
 import dotenv from 'dotenv';
 import { AppDataSource } from "./data-source";
-import tutorRoutes from "./routes/tutor.routes";
 import userRoutes from "./routes/users.routes";
 import authRoutes from "./routes/auth.routes";
 import courseRoutes from "./routes/course.routes";
@@ -22,7 +21,6 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use("/api", tutorRoutes);
 app.use("/api", userRoutes);
 app.use("/api", authRoutes);
 app.use("/api", courseRoutes);

@@ -27,19 +27,21 @@ export const tutorApi = {
     skills: string[];
     academicCred: { qualification: string; institution: string; year: number }[];
   }) => {
-    const res = await api.post("/application", applicationData);
+    const res = await api.post("/applications", applicationData);
     return res.data;
     },    
     getCourses: async () => {
       const res = await api.get("/courses");
       return res.data;},
 
-    submitSkills: async (email: string, skills: string[], customSkills: string[]) => {
+    submitSkills: async (email: string, selectedSkills: string[], customSkills: string[]) => {
       await api.post("/skills", {
         email,
-        skills: [...skills.filter(s => s !== "Other"), ...customSkills.filter(s => s.trim() !== "")],
+        selectedSkills: selectedSkills.filter(s => s !== "Other"),
+        customSkills: customSkills.filter(s => s.trim() !== "")
       });
     },
+      
     submitCredentials: async (email: string, credentials: { qualification: string; institution: string; year: number }[]) => {
       return await api.post("/credentials", { email, credentials });
     },
