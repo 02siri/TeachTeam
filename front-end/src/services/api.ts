@@ -29,7 +29,15 @@ export const tutorApi = {
   }) => {
     const res = await api.post("/applications", applicationData);
     return res.data;
-    },    
+    }, 
+    getAllApplications: async () => {
+      const res = await api.get("/applications");
+      return res.data;
+    }, 
+    getApplicationByEmail: async (email: string) => {
+      const res = await api.get(`/applications/${email}`);
+      return res.data;
+    },      
     getCourses: async () => {
       const res = await api.get("/courses");
       return res.data;},

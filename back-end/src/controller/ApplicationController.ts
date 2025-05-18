@@ -53,5 +53,39 @@ export class ApplicationController {
       return res.status(500).json({ error: "Internal server error", detail: err.message });
     }
   }
+
+  static async getAllApplications(req: Request, res: Response) {
+    try {
+      const appRepo = AppDataSource.getRepository(Application);
+  
+      const applications = await appRepo.find({
+        relations: ["user", "courses"], 
+        order: { timestamp: "DESC" },   
+      });
+  
+      return res.status(200).json(applications);
+    } catch (err: any) {
+      console.error("Error fetching applications:", err.message);
+      return res.status(500).json({ error: "Failed to fetch applications", detail: err.message });
+    }
+  }
+
+  static async getApplicationByEmail(req: Request, res: Response) {
+    try {
+      const { email } = req.params;
+      const appRepo = AppDataSource.getRepository(Application);
+      const application = await appRepo.findOne({
+        where: { user: { email } },
+        relations: ["user", "courses"],
+      });
+  
+      if (!application) return res.status(404).json({ error: "No application found" });
+      return res.status(200).json(application);
+    } catch (err: any) {
+      return res.status(500).json({ error: "Error fetching application", detail: err.message });
+    }
+  }
+  
+  
 }
 
