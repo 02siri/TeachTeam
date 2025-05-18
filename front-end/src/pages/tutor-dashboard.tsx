@@ -170,7 +170,7 @@ const TutorDashboard = () => {
       const applicationData = {
         email: currentUserEmail,
         role: [role],
-        courses: courseOptions.map((c) => c.id),
+        courses: courses.map((c) => c.id),
         previousRoles,
         availability,
         skills: mergedSkills,

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from "typeorm";
 import { Application } from "./Application";
 
 @Entity()
@@ -18,6 +18,6 @@ export class Course {
   @Column("text")
   description: string;
 
-  @OneToMany(() => Application, (app) => app.course)
+  @ManyToMany(() => Application, (app) => app.courses)
   applications: Application[];
 }

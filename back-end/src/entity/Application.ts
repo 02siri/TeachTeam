@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTable } from "typeorm";
 import { Users } from "./Users";
 import { Course } from "./Course";
 
@@ -10,9 +10,10 @@ export class Application {
   @ManyToOne(() => Users, (user) => user.applications)
   user: Users;
 
-  @ManyToOne(() => Course, (course) => course.applications)
-  course: Course;
-
+  @ManyToMany(() => Course)
+  @JoinTable()
+  courses: Course[];
+  
   @Column()
   sessionType: "tutor" | "lab";
 
