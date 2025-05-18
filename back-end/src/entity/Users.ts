@@ -36,13 +36,6 @@ export class Users {
   @Column({default : false})
   isBlocked : boolean
 
-  @Column({
-    type: "enum",
-    enum: ["candidate", "lecturer"],
-    default: "candidate"
-  })
-  userType: "candidate" | "lecturer";
-
   @CreateDateColumn({type: "timestamp"})
   dateOfJoining: Date
 

@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Skills } from "../entity/Skills";
-import { Users } from "../entity/Users";
-import { getUserTypeFromEmail } from "../services/userType"; 
+import { Users } from "../entity/Users"; 
 import { normalizeSkills } from "../services/skillService";
 
 const skillRepo = AppDataSource.getRepository(Skills);
@@ -19,10 +18,6 @@ export const addSkillsToCandidate = async (req: Request, res: Response) => {
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const userType = getUserTypeFromEmail(email);
-    if (userType !== "candidate") {
-      return res.status(403).json({ message: "Only candidates can have skills" });
-    }
 
     const allSkillNames = normalizeSkills([...selectedSkills, ...customSkills]);
 

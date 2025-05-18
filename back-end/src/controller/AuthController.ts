@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Users } from "../entity/Users";
 import * as bcrypt from "bcryptjs";
-import { getUserTypeFromEmail } from "../services/userType";
+
 
 export class AuthController{
     private usersRepository = AppDataSource.getRepository(Users);
@@ -36,7 +36,6 @@ export class AuthController{
             return response.status(200).json({
                 message: "Login Successful",
                 user: {email: user.email, username: user.username},
-                userType: getUserTypeFromEmail(email)
             })
         }catch(error){
             console.log("Login Error");

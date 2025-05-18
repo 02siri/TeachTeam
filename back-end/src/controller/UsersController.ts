@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Users } from "../entity/Users";
 import { Like } from "typeorm";
-import { getUserTypeFromEmail } from "../services/userType";
 
 export class UsersController {
 
@@ -58,7 +57,7 @@ private usersRepository = AppDataSource.getRepository(Users);
           message: "Email already exists. Please use a different one."
         });
       }
-      const userType = getUserTypeFromEmail(email);
+
     
     const user = Object.assign(new Users(), {
       firstName,
@@ -67,7 +66,6 @@ private usersRepository = AppDataSource.getRepository(Users);
       username,
       password, //will be hashed by @BeforeInsert hook,
       isBlocked,
-      userType,
     });
 
       const savedUser = await this.usersRepository.save(user);
