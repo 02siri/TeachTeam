@@ -73,19 +73,34 @@ const TutorDashboard = () => {
   //checks if the required fields are filled and sets error messages accordingly..
   //returns true if all validations pass..
   //if any field is empty, it sets the error message for that field..
-  const validateStep = () => {  
+  const validateStep = () => {
     const newErrors: { [key: string]: string } = {};
+  
     if (!role) newErrors.role = "Please select one role";
     if (courses.length === 0) newErrors.courses = "Select at least one course";
     if (previousRoles.some((r) => r.trim() === "")) newErrors.previousRoles = "Enter previous role";
     if (!availability) newErrors.availability = "Select availability";
     if (skills.length === 0) newErrors.skills = "Select at least one skill";
-    if (academicCred.some((c) => !c.qualification || !c.institution || !c.year)) {
-      newErrors.academicCred = "Enter all academic fields";
-    }    
+  
+    const hasInvalidCred = academicCred.some((c) => {
+      const year = parseInt(c.year);
+      return (
+        !c.qualification?.trim() ||
+        !c.institution?.trim() ||
+        isNaN(year) ||      
+        year < 1900 ||       
+        year > 2099         
+      );
+    });
+  
+    if (hasInvalidCred) {
+      newErrors.academicCred = "Enter a valid qualification, institution, and year (1900–2099)";
+    }
+  
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0; 
-  };
+    return Object.keys(newErrors).length === 0;
+  };  
+  
 
 
   //toggle function for role selection..
@@ -610,7 +625,7 @@ const TutorDashboard = () => {
           {/*if the user doesn't add anything, an error message is shown*/}
           {/*the academic credentials are stored in the academicCred state variable*/}
           {/*if the user doesn't add anything, an error message is shown*/}
-          <FormControl p={5} bg="gray.50" borderRadius="md" shadow="sm">
+          <FormControl p={5} bg="gray.50" borderRadius="md" shadow="sm" isInvalid={!!errors.academicCred}>
             <FormLabel
             textAlign="center"
             width="100%"
@@ -626,6 +641,7 @@ const TutorDashboard = () => {
                   <Input
                   placeholder="Qualification(e.g. Diploma)"
                   value={cred.qualification}
+                  isInvalid={!!errors.academicCred}
                   onChange={(e) => {
                     const updated = [...academicCred];
                     updated[index].qualification = e.target.value;
@@ -635,6 +651,7 @@ const TutorDashboard = () => {
                   <Input
                    placeholder="Institution(e.g. RMIT)"
                    value={cred.institution}
+                   isInvalid={!!errors.academicCred}
                    onChange={(e) => {
                     const updated = [...academicCred];
                     updated[index].institution = e.target.value;
@@ -642,21 +659,31 @@ const TutorDashboard = () => {
                   }}
                   />
                    <Input
-                    placeholder="Year (e.g. 2025)"
-                    type="number"
-                    value={cred.year}
-                    onChange={(e) => {
-                      const updated = [...academicCred];
-                      updated[index].year = e.target.value;
-                      setAcademicCred(updated);
+                   placeholder="Year (e.g. 2025)"
+                   type="number"
+                   min={1900}
+                   max={2099}
+                   step={1}
+                   value={cred.year?.toString() || ""}
+                   isInvalid={!!errors.academicCred}
+                   onChange={(e) => {
+                    const updated = [...academicCred];
+                    updated[index].year = e.target.value.replace(/\D/g, "");
+                    setAcademicCred(updated);
                     }}
                     />
+
                     <Button onClick={() => setAcademicCred([...academicCred, { qualification: "", institution: "", year: "" }])}>+</Button>
                     {academicCred.length > 1 && (
                       <Button colorScheme="red" onClick={() => setAcademicCred(academicCred.filter((_, i) => i !== index))}>-</Button>
                        )}
                        </HStack>
                       ))}
+                      {errors.academicCred && (
+                        <Text color="red.500" fontSize="sm" mt={2}>
+                          {errors.academicCred}
+                          </Text>
+                        )}
 
                       </FormControl>
 
