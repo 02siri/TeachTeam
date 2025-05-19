@@ -6,20 +6,29 @@ export const api = axios.create({
 });
 
 export interface Tutor {
-    id: number;
-    role: string[];                   
-    courses: string[];                
+     applicationID: number;
+    sessionType: string[];
+    courses: {courseID: number; courseCode: string; courseName: string; semester: string; description: string}[];
     previousRoles: string[];
-    availability: string;           
-    skills: string[];
-    academicCred: string[];
+    availability: string;
     timestamp: string;
+    user?:{
+      id: number;
+      firstName: string;
+      lastName: string;
+      username: string;
+      email: string;
+      isBlocked: boolean;
+      dateOfJoining: string;
+      skills: {skillId: number; skillName: string}[];
+      credentials : {credentialId: number; qualification: string; institution : string; year: number}[];
+    };
 }
 
 export const tutorApi = {
   submitApplication: async (applicationData: {
     email: string;
-    role: string[];
+    sessionType: string[];
     courses: string[];
     previousRoles: string[];
     availability: string;
@@ -40,7 +49,8 @@ export const tutorApi = {
     },      
     getCourses: async () => {
       const res = await api.get("/courses");
-      return res.data;},
+      return res.data;
+    },
 
     submitSkills: async (email: string, selectedSkills: string[], customSkills: string[]) => {
       await api.post("/skills", {
@@ -64,7 +74,9 @@ export interface User{
   username: string,
   email: string,
   isBlocked: boolean,
-  dateOfJoining: string
+  dateOfJoining: string,
+  skills: {skillId: number; skillName: string}[],
+  credentials : {credentialId: number; qualification: string; institution : string; year: number}[]
 }
 
 export const userApi = {

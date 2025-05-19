@@ -136,7 +136,10 @@ async fetchUserByEmail(request: Request, response: Response){
     }
     
     try{
-      const user = await this.usersRepository.findOneBy({email});
+      const user = await this.usersRepository.findOne({
+        where: {email : request.params.email},
+        relations : ["applications", "skills", "credentials"],
+    });
       if(user){
         const {password, ...protectedUser} = user;
         return response.status(200).json(protectedUser);

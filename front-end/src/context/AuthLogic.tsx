@@ -1,4 +1,4 @@
-import React, {createContext,useContext,useState} from "react";
+import React, {createContext,useContext,useEffect,useState} from "react";
 // import {User,DEFAULT_USERS} from "../types/users";
 import { authApi} from "@/services/api";
 import { useRouter } from "next/router";
@@ -17,6 +17,8 @@ interface AuthContextType{
 export function AuthProvider(
     {children}:{children:React.ReactNode}
 ){
+
+
    //initial state -> null
     const [currentUserEmail , setCurrentUserEmail] = useState< string | null >(
         //Check if we are running in a browser environment. 
@@ -29,6 +31,15 @@ export function AuthProvider(
         typeof window!== "undefined" ? sessionStorage.getItem("CurrentUsername") : null
     );  
     const router = useRouter();
+
+     useEffect(()=>{
+        if(typeof window!== "undefined"){
+            const storedEmail = sessionStorage.getItem("CurrentUserEmail");
+            const storedUsername = sessionStorage.getItem("CurrentUsername");
+            if(storedEmail) setCurrentUserEmail(storedEmail);
+            if(storedUsername) setCurrentUsername(storedUsername);
+        }
+    }, []);
 
     //login function
     const login = async (credentials: {email: string, password: string}): Promise<boolean> => {

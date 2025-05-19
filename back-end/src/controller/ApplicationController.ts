@@ -76,7 +76,12 @@ export class ApplicationController {
       const appRepo = AppDataSource.getRepository(Application);
       const application = await appRepo.findOne({
         where: { user: { email } },
-        relations: ["user", "courses"],
+        relations: [
+          "user", 
+          "user.skills",
+          "user.credentials",
+          "courses"
+        ],
       });
   
       if (!application) return res.status(404).json({ error: "No application found" });
