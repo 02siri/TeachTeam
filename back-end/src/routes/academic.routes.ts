@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addAcademicCredentials } from "../controller/academicCredentialController";
+import { addAcademicCredentials } from "../controller/AcademicCredentialController";
 
 const router = Router();
 router.post("/credentials", addAcademicCredentials);
