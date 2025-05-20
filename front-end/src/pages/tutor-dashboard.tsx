@@ -65,7 +65,22 @@ const TutorDashboard = () => {
   ]);  
   const [customSkills, setCustomSkills] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});    
-  const [existingApplication, ] = useState<null | { role: string }>(null);
+  interface Application {
+    sessionType?: string;
+    role?: string[];
+    courses?: string[];
+    previousRoles?: string[];
+    availability?: string;
+    user?: {
+      skills?: { skillName: string }[];
+      credentials?: { qualification: string; institution: string; year: number }[];
+    };
+  }
+  const [existingApplication, setExistingApplication] = useState<Application | null>(null);
+  const appliedRole = existingApplication?.sessionType?.toLowerCase();
+
+
+
 
 
 
@@ -110,56 +125,89 @@ const TutorDashboard = () => {
   const toggleRole = (selectedRole: string) => {
     setRole((prev) => (prev === selectedRole ? "" : selectedRole));
   };
-  
-
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const coursesFromDB = (await tutorApi.getCourses()) ?? [];
-        const formatted: CourseOption[] = coursesFromDB.map((course: {
-          courseCode: string;
-          courseName: string;
-          semester: string;
-          description: string;
-        }) => ({
-          id: course.courseCode,
-          name: course.courseName,
-          semester: course.semester,
-          description: course.description,
-        }));
-        setCourseOptions(formatted);
-      } catch (error) {
-        console.error("Error fetching courses:", error);
+  const fetchCourses = async () => {
+    try {
+      const coursesFromDB = (await tutorApi.getCourses()) ?? [];
+      const formatted: CourseOption[] = coursesFromDB.map((course: {
+        courseCode: string;
+        courseName: string;
+        semester: string;
+        description: string;
+      }) => ({
+        id: course.courseCode,
+        name: course.courseName,
+        semester: course.semester,
+        description: course.description,
+      }));
+      setCourseOptions(formatted);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+  };
+
+  fetchCourses();
+}, []);
+
+  
+
+
+ useEffect(() => {
+  const fetchApplication = async () => {
+    if (!currentUserEmail || courseOptions.length === 0) return;
+
+    try {
+      const data = await tutorApi.getApplicationByEmail(currentUserEmail);
+      if (data) {
+        setExistingApplication(data);
+
+        // Prefill role
+        if (data.role && data.role.length > 0) setRole(data.role[0]);
+
+        // Prefill courses
+        if (data.courses?.length > 0) {
+          const selectedCourseIds = data.courses.map((c: { courseCode: string }) => c.courseCode);
+          const matched = courseOptions.filter(option =>
+            selectedCourseIds.includes(option.id)
+          );
+          setCourses(matched);
+        }
+
+
+        if (data.previousRoles) setPreviousRoles(data.previousRoles);
+        if (data.availability) setAvailability(data.availability);
+
+        const skillNames = data.user?.skills.map((s: { skillName: string }) => s.skillName) || [];
+        const standardSkills = ["HTML", "CSS", "JavaScript", "React"];
+        const custom = skillNames.filter((s: string) => !standardSkills.includes(s));
+        const selected = skillNames.filter((s: string) => standardSkills.includes(s));
+        if (custom.length > 0) selected.push("Other");
+        setSkills(selected);
+        setCustomSkills(custom);
+
+        const creds = data.user?.credentials || [];
+        if (creds.length > 0) {
+          setAcademicCred(
+            creds.map((c: { qualification: string; institution: string; year: number }) => ({
+              qualification: c.qualification,
+              institution: c.institution,
+              year: c.year.toString(),
+            }))
+          );
+        }
       }
-    }; 
-    fetchCourses();
-  }, []);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (err) {
+      console.error("No application found for user");
+    }
+  };
+
+  fetchApplication();
+}, [currentUserEmail, courseOptions]);
+
   
 
-  //get the username from the email..
-  //this is done by splitting the email at the '@' symbol and taking the first part..
-  // const username = user?.email?.split("@")[0];  
-
-  //const email = currentUserEmail;
-
-  // useEffect(() => {
-  //   const fetchApplication = async () => {
-  //     if (!email) return;
-  
-  //     try {
-  //       const res = await tutorApi.getApplication(email);
-  //       if (res?.data) {
-  //         setExistingApplication(res.data);
-  //       }
-  //     } catch (err) {
-  //       console.error("Error fetching application:", err);
-  //     }
-  //   };
-  
-  //   fetchApplication();
-  // }, [email]);
-  
 
 
   //merge skills and custom skills
@@ -185,6 +233,7 @@ const TutorDashboard = () => {
       const applicationData = {
         email: currentUserEmail,
         role: [role],
+        sessionType: role === "Tutor" ? "tutor" : "lab",
         courses: courses.map((c) => c.id),
         previousRoles,
         availability,
@@ -293,15 +342,16 @@ const TutorDashboard = () => {
               <MotionVStack
               spacing={2}
               onClick={() => {
-                if (!existingApplication) toggleRole("Tutor");
+                if (!appliedRole || appliedRole !== "tutor") toggleRole("Tutor");
               }}
-              pointerEvents={existingApplication ? "none" : "auto"}
-              opacity={existingApplication ? 0.6 : 1}
+              pointerEvents={appliedRole === "tutor" ? "none" : "auto"}
+              opacity={appliedRole === "tutor" ? 0.6 : 1}
+              borderColor={appliedRole === "tutor" ? "gray.500" : role === "Tutor" ? "blue.500" : "gray.300"}
+              bg={appliedRole === "tutor" ? "gray.100" : role === "Tutor" ? "blue.50" : "white"}
+
               cursor="pointer"
               align="center"
               borderWidth="2px"
-              borderColor={role === "Tutor" ? "blue.500" : "gray.300"}
-              bg={role === "Tutor" ? "blue.50" : "white"}
               p={3}
               rounded="md"
               _hover={{ borderColor: "blue.500" }}
@@ -317,21 +367,22 @@ const TutorDashboard = () => {
               {/*this is a motion-enhanced vertical stack for the Lab Assistant role*/}
               <MotionVStack
               spacing={2}
-              onClick={() => {
-                if (!existingApplication) toggleRole("Lab Assistant");
+               onClick={() => {
+                if (!appliedRole || appliedRole !== "lab") toggleRole("Lab Assistant");
               }}
-              pointerEvents={existingApplication ? "none" : "auto"}
-              opacity={existingApplication ? 0.6 : 1}
               cursor="pointer"
               align="center"
               borderWidth="2px"
-              borderColor={role=="Lab Assistant" ? "blue.500" : "gray.300"}
+              pointerEvents={appliedRole === "lab" ? "none" : "auto"}
+              opacity={appliedRole === "lab" ? 0.6 : 1}
+              borderColor={appliedRole === "lab" ? "gray.500" : role === "Lab Assistant" ? "blue.500" : "gray.300"}
+              bg={appliedRole === "lab" ? "gray.100" : role === "Lab Assistant" ? "blue.50" : "white"}
+
               p={3}
               rounded="md"
               _hover={{ borderColor: "blue.500" }}
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
-              bg={role=="Lab Assistant" ? "blue.50" : "white"}
               >
                 <Image src="lab_assistant.png" alt="Lab Assistant" width={200} height={200} />
                 <Text fontWeight="bold">Lab Assistant</Text>
@@ -397,6 +448,8 @@ const TutorDashboard = () => {
                 borderRadius="md"
                 _hover={{ bg: "blue.50" }}
                 whiteSpace="normal"
+                isDisabled={((existingApplication as Tutor)?.courses || []).includes(course.id)}
+                opacity={((existingApplication as Tutor)?.courses || []).includes(course.id) ? 0.6 : 1}
                 >
                   <Text fontWeight="medium">{course.id}: {course.name}</Text>
                   </Checkbox>
@@ -717,7 +770,7 @@ const TutorDashboard = () => {
     </Button>
   ) : (
     <Text fontSize="lg" fontWeight="bold" color="red.500" textAlign="center">
-      You have already applied for the {existingApplication.role} role.
+      You have already applied for the {(typeof existingApplication === "object" && existingApplication && "role" in existingApplication && Array.isArray((existingApplication as Tutor).role)) ? (existingApplication as Tutor).role[0] : "selected"} role.
     </Text>
   )}
 </Flex>
