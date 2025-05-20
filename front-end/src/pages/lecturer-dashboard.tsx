@@ -21,24 +21,16 @@ import {
   Td,
   TableContainer,
 } from "@chakra-ui/react";
+import { tutorApi, Tutor} from "@/services/api";
 
 /**
  * Interface representing an applicant for tutor positions
  * Contains all details about the applicant including personal info, qualifications,
  * and application status
  */
-interface Applicant {
-  name: string;               // Applicant's full name
-  courses: string[];          // List of courses they can teach
-  skills: string[];           // Technical/teaching skills
-  availability: string;       // When they're available to teach
-  timestamp: string;          // When application was submitted
-  rank?: number;              // Optional ranking assigned by lecturer
-  role: string[];             // Roles they can fulfill (e.g., tutor, demonstrator)
-  academicCred: string;       // Academic credentials/qualifications
-  comments?: string;          // Optional comments added by lecturer
-  previousRoles: string[];    // Past teaching experience
-  selectedCourses?: string[]; // Courses specifically selected for this applicant
+interface ApplicantionDisplay extends Tutor {
+ applicantName : string;
+ academicCred: string;
 }
 
 // Create a motion-enabled Box component using Framer Motion for animations

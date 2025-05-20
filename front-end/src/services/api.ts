@@ -6,12 +6,16 @@ export const api = axios.create({
 });
 
 export interface Tutor {
-     applicationID: number;
+    applicationID: number;
     sessionType: string[];
     courses: {courseID: number; courseCode: string; courseName: string; semester: string; description: string}[];
     previousRoles: string[];
     availability: string;
     timestamp: string;
+    rank?: number | null;
+    comments?: number | null;
+    isSelected: boolean;
+    selectedCourses : {courseID: number; courseCode: string; courseName: string; semester: string; description: string}[];
     user?:{
       id: number;
       firstName: string;
@@ -63,8 +67,17 @@ export const tutorApi = {
     submitCredentials: async (email: string, credentials: { qualification: string; institution: string; year: number }[]) => {
       return await api.post("/credentials", { email, credentials });
     },
-    
 
+    updateApplicationByLecturer : async(applicationId : number, updateData:{
+      rank?: number | null;
+      comments?: string | null;
+      selectedCourseIDs?: number[];
+      status?:"pending" | "approved" | "rejected";
+    }) => {
+      const res = await api.patch(`/applications/${applicationId}`, updateData);
+      return res.data;
+    },
+  
 };
 
 export interface User{
@@ -116,5 +129,4 @@ export const authApi = {
     const res = await api.post("/logout");
     return res.data;
   },
-} 
-  
+};

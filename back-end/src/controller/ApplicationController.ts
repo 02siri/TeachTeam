@@ -59,7 +59,7 @@ export class ApplicationController {
       const appRepo = AppDataSource.getRepository(Application);
   
       const applications = await appRepo.find({
-        relations: ["user", "courses"], 
+        relations: ["user", "courses","selectedCourses"], 
         order: { timestamp: "DESC" },   
       });
   
@@ -80,7 +80,8 @@ export class ApplicationController {
           "user", 
           "user.skills",
           "user.credentials",
-          "courses"
+          "courses",
+          "selectedCourses"
         ],
       });
   
@@ -91,6 +92,63 @@ export class ApplicationController {
     }
   }
   
-  
+  static async updateApplicationByLecturer(req:Request, res:Response){
+    try{
+      const {applicationId} = req.params;
+      const {rank, comments, selectedCourseId, status} = req.body
+
+      const appRepo = AppDataSource.getRepository(Application);
+      const courseRepo = AppDataSource.getRepository(Course);
+
+      const application = await appRepo.findOne({
+        where: {applicationId: parseInt(applicationId)},
+        relations: ["courses","selectedCourses"]
+      });
+
+      if(!application){
+        return res.status(400).json({
+          error:"Application not found"
+        })
+      }
+
+      //updating lecturer-specific fields
+      if(rank!==undefined){
+        application.rank = rank;
+      }
+
+      if(comments!==undefined){
+        application.comments =  comments;
+       }
+
+       if(status!==undefined){
+        application.status = status;
+       }
+
+       //handle selected courses
+       if(selectedCourseId &&  Array.isArray(selectedCourseId)){
+        const coursesToSelect = await courseRepo.find({
+          where: {courseID :In(selectedCourseId)}
+        })
+
+        application.selectedCourses = coursesToSelect;
+        application.isSelected = true;
+       } else if(selectedCourseId === null || selectedCourseId === undefined){
+        application.selectedCourses = [];
+        application.isSelected = false;
+       }
+
+       await appRepo.save(application);
+
+       return res.status(200).json({
+        message: "Application updated successfully",
+        application: application,
+       });
+    }
+  catch(error){
+    return res.status(500).json({
+        message: "Error fetching user by email : ", error
+      })
+  }
+}
 }
 

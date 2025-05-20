@@ -10,6 +10,7 @@ export class Application {
   @ManyToOne(() => Users, (user) => user.applications)
   user: Users;
 
+  //Relation 1 : Courses Candidate APPLIED for
   @ManyToMany(() => Course)
   @JoinTable()
   courses: Course[];
@@ -23,11 +24,26 @@ export class Application {
   @Column()
   status: "pending" | "approved" | "rejected";
 
-  @Column()
-  timestamp: Date;
+  //Relation 2 : Courses Lecturer SELECTED the candidate for
+  @ManyToMany(() => Course, (course)=>course.applicationsSelectedFor)
+  @JoinTable({name: "application_selected_courses"})
+  selectedCourses:
+   Course[];
+  
+
+  //rank is optional
+  @Column({nullable: true})
+  rank: number;
+
+  //comments are optional ; "text" for potentially longer comments
+  @Column("text", {nullable: true})
+  comments: string;
 
   @Column()
   isSelected: boolean;
+
+  @Column()
+  timestamp: Date;
 
   @Column("simple-array")
   previousRoles: string[];
