@@ -135,7 +135,11 @@ export default function SignUp(){
 if(!hasErrors){
     try {
     setIsSubmitting(true);
-    const response = await userApi.createUser(newUser);
+    const response = await userApi.createUser({
+      ...newUser,
+      skills: [],
+      credentials: [],
+    });
       toast({
             title: "Your Sign Up was Successful ! ",
               description: "Redirecting to Dashboard",

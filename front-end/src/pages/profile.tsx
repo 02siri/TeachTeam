@@ -7,7 +7,6 @@ import { AxiosError } from "axios";
 import Header from "@/components/Header";
 import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
-import { label } from "framer-motion/client";
 
 interface TutorData{
     sessionType: string[];
@@ -85,6 +84,7 @@ const Profile = () => {
                 try{
                     const tutorRes = await tutorApi.getApplicationByEmail(currentUserEmail);
                     setTutorData(tutorRes);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 }catch(tutorError){
                     console.warn("Tutor Application not found or failed to fetch");
                 }

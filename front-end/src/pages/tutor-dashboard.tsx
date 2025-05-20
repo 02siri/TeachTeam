@@ -197,7 +197,8 @@ const TutorDashboard = () => {
         await tutorApi.submitApplication({
           ...applicationData,
           skills: mergedSkills,
-          academicCred: academicCredentialsPayload
+          academicCred: academicCredentialsPayload,
+          sessionType: []
         });
         
         await tutorApi.submitSkills(currentUserEmail, skills, customSkills);

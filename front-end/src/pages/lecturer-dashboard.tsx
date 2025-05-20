@@ -21,17 +21,26 @@ import {
   Td,
   TableContainer,
 } from "@chakra-ui/react";
-import { tutorApi, Tutor} from "@/services/api";
+
 
 /**
  * Interface representing an applicant for tutor positions
  * Contains all details about the applicant including personal info, qualifications,
  * and application status
  */
-interface ApplicantionDisplay extends Tutor {
- applicantName : string;
- academicCred: string;
-}
+interface Applicant {
+  name: string;
+  role: string[];
+  academicCred: string;
+  courses: string[];
+  skills: string[];
+  availability: string;
+  previousRoles?: string[];
+  timestamp: number;
+  comments?: string;
+  selectedCourses?: string[];
+    rank?: number;
+  }
 
 // Create a motion-enabled Box component using Framer Motion for animations
 const MotionBox = motion(Box);
