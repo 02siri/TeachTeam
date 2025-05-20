@@ -78,6 +78,8 @@ const TutorDashboard = () => {
   }
   const [existingApplication, setExistingApplication] = useState<Application | null>(null);
   const appliedRole = existingApplication?.sessionType?.toLowerCase();
+  const [appliedCourseIds, setAppliedCourseIds] = useState<string[]>([]);
+
 
 
 
@@ -173,6 +175,11 @@ const TutorDashboard = () => {
           );
           setCourses(matched);
         }
+        if (data.courses?.length > 0) {
+          const selectedIds = data.courses.map((c: { courseCode: string }) => c.courseCode);
+          setAppliedCourseIds(selectedIds); 
+          }
+
 
 
         if (data.previousRoles) setPreviousRoles(data.previousRoles);
@@ -414,7 +421,8 @@ const TutorDashboard = () => {
               </FormLabel>
               <CheckboxGroup
               colorScheme="blue"
-              value={courses.map((c) => c.id)} 
+              value={courses.map((c) => c.id).filter(id => !appliedCourseIds.includes(id))}
+
               onChange={(selectedIds) => {
                 const selectedCourses = courseOptions.filter((course) =>
                   selectedIds.includes(course.id)
@@ -448,7 +456,9 @@ const TutorDashboard = () => {
                 borderRadius="md"
                 _hover={{ bg: "blue.50" }}
                 whiteSpace="normal"
-                isDisabled={((existingApplication as Tutor)?.courses || []).includes(course.id)}
+                isDisabled={appliedCourseIds.includes(course.id)}
+                isChecked={!appliedCourseIds.includes(course.id) && courses.some((c) => c.id === course.id)}
+                onChange={() => {}}
                 opacity={((existingApplication as Tutor)?.courses || []).includes(course.id) ? 0.6 : 1}
                 >
                   <Text fontWeight="medium">{course.id}: {course.name}</Text>
