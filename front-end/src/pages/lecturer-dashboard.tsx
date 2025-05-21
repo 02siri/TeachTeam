@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -22,25 +22,17 @@ import {
   TableContainer,
 } from "@chakra-ui/react";
 
+import {api, tutorApi, Tutor, userApi} from "../services/api";
 
 /**
- * Interface representing an applicant for tutor positions
- * Contains all details about the applicant including personal info, qualifications,
- * and application status
+ * Extended applicant interface to combine tutor and user details for frontend
  */
-interface Applicant {
-  name: string;
-  role: string[];
-  academicCred: string;
-  courses: string[];
-  skills: string[];
-  availability: string;
-  previousRoles?: string[];
-  timestamp: number;
-  comments?: string;
-  selectedCourses?: string[];
-    rank?: number;
-  }
+interface DisplayApplicant extends Tutor{
+  role: any;
+  name: string; //Combined firstName and lastName
+  academicCred : string; //formatted academic credentails
+  skills: string[]; //formatted skills
+}
 
 // Create a motion-enabled Box component using Framer Motion for animations
 const MotionBox = motion(Box);
@@ -58,11 +50,8 @@ const MotionBox = motion(Box);
  */
 const LecturerDashboard = () => {
   // Main state management
-  const [applicants, setApplicants] = useState<Applicant[]>([]); // All applicants in the system
-  const [selectedApplicants, setSelectedApplicants] = useState<Applicant[]>([]); // Applicants chosen by lecturer
-  const [rankedApplicants, setRankedApplicants] = useState<Applicant[]>([]); // Applicants with rankings assigned
-  const [comments, setComments] = useState<{ [name: string]: string }>({}); // Comments indexed by applicant name
-  const [rankErrors, setRankErrors] = useState<{ [key: string]: string }>({}); // Error messages for invalid rankings
+  const [applicants, setApplicants] = useState<DisplayApplicant[]>([]); // All applicants in the system
+ const [rankErrors, setRankErrors] = useState<{ [key: string]: string }>({}); // Error messages for invalid rankings
   const [inputErrors, setInputErrors] = useState<{ name?: string }>({}); // Validation errors for input fields
   
   // Filter and sort state
@@ -76,60 +65,64 @@ const LecturerDashboard = () => {
   
   // UI state controls
   const [isSelecting, setIsSelecting] = useState(false); // Whether in selection mode
-  const [submittedData, setSubmittedData] = useState<Applicant[]>([]); // Final submitted selections
   const [view, setView] = useState<"selection" | "submitted">("selection"); // Current view mode
-  const [courseSelections, setCourseSelections] = useState<{[name:string]:string[]}>({}); // Specific courses selected for each applicant
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
-  /**
-   * Extracts and formats a name from a localStorage key
-   * Converts format like "john_smith_applicationData" to "John Smith"
-   */
-  const extractNameFromKey = (key: string) => {
-    const name = key.replace("_applicationData","");
-    const formattedName = name
-      .split("_")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ");
-    return formattedName;
-  };
-
-  interface Course {
-    id: string;
-    name: string;
+  /* Helper function to format academic credentials */
+  const formatAcadCred = (credentials : {qualification: string; institution: string; year: number}[]) => {
+    return credentials.map((cred)=> `${cred.qualification} from ${cred.institution} (${cred.year})`).join(", ");
   }
   
+  /* Helper function to format courses */
+  const formatCourses = (courses : {courseCode: string; courseName: string}[]) => {
+    return courses.map((c)=> `${c.courseCode} - ${c.courseName}`);
+  }
 
   /**
-   * Load applicant data from localStorage on component mount
-   * Finds all entries with "_applicationData" suffix and parses them
+   * Fetch applicant data from backend and format for frontend.
+   * function memoized with useCallback to prevent unecessary re-creations.
    */
-  useEffect(() => {
-    const storedApplicants: Applicant[] = Object.keys(localStorage)
-      .filter((key) => key.endsWith("_applicationData"))
-      .map((key) => {
-        const item = localStorage.getItem(key);
-        const name = extractNameFromKey(key);
+  
+  const fetchApplicants = useCallback(async() => {
+      try{
+        setLoading(true);
+        const applications = await tutorApi.getAllApplications();
 
-        if (item) {
-          try {
-            const applicantData = JSON.parse(item) as Applicant;
-            return {
-              ...applicantData,
-              name: name,
-              courses: (applicantData.courses as unknown as Course[])?.map((c) => `${c.id} - ${c.name}`) || [],
-              };
-          } catch (error) {
-            console.error(`Error parsing applicant data for ${key}: `, error);
-            return null;
+        const formattedApplications : DisplayApplicant[] =applications.map((app: Tutor) => {
+          const name = app.user ? `${app.user.firstName} ${app.user.lastName}` : "N/A";
+          const academicCred = app.user ? formatAcadCred(app.user.credentials) : "No Academic Credentials";
+
+          const skills = app.user ? app.user.skills.map((s) => s.skillName).join(", ") : [];
+
+          return{
+            ...app,name,academicCred,skills,courses : formatCourses(app.courses);
           }
-        }
-        return null;
-      })
-      .filter((applicant): applicant is Applicant => applicant !== null); // Type predicate to filter out null values
+        });
 
-    setApplicants(storedApplicants);
-  }, []); // Empty dependency array ensures this runs only once on mount
+        setApplicants(formattedApplications);
 
+      }catch(error){
+        console.error("Failed to fetch applications : ", error);
+        setError("Failed to load applicants. Please try again");
+
+        toast ({
+          title: "Error",
+          description: "Failed to load applicants",
+          status: "error",
+          duration : 5000,
+          isClosable : true,
+        })
+      } finally{
+        setLoading(false);
+      }
+    } , [toast]);
+
+//load applicant data on component mount
+  useEffect (()=> {
+    fetchApplicants();
+  },[fetchApplicants]);
+  
   /**
    * Restore previously saved selections when returning to selection view
    * Loads selected applicants, rankings, comments, and course selections

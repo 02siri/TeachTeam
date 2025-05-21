@@ -29,7 +29,6 @@ export class Application {
   @JoinTable({name: "application_selected_courses"})
   selectedCourses:
    Course[];
-  
 
   //rank is optional
   @Column({nullable: true})

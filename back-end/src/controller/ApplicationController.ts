@@ -95,7 +95,7 @@ export class ApplicationController {
   static async updateApplicationByLecturer(req:Request, res:Response){
     try{
       const {applicationId} = req.params;
-      const {rank, comments, selectedCourseId, status} = req.body
+      const {rank, comments, selectedCourseId, status, isSelected} = req.body
 
       const appRepo = AppDataSource.getRepository(Application);
       const courseRepo = AppDataSource.getRepository(Course);
