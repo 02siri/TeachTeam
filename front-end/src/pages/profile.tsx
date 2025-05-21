@@ -40,7 +40,7 @@ type ProfileMenuKey = typeof profileMenuItems[number];
 interface ProfileHeaderProps{
 activeMenu : ProfileMenuKey;
 onMenuChange: (menu: ProfileMenuKey) => void;
-tutorData: TutorData | null;
+tutorData: TutorData[];
 }
 
 const ProfileHeader : React.FC<ProfileHeaderProps> = ({activeMenu, onMenuChange, tutorData}) => (
@@ -60,13 +60,14 @@ const ProfileHeader : React.FC<ProfileHeaderProps> = ({activeMenu, onMenuChange,
 
 const Profile = () => {
     const [profileData, setProfileData] = useState<UserProfile | null>(null);
-    const [tutorData, setTutorData] = useState<TutorData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string|null>(null);
     const [activeMenu, setActiveMenu] = useState<ProfileMenuKey>("Personal Details");
     const router = useRouter();
     const toast = useToast();
     const {currentUserEmail} = useAuth();
+    const [tutorData, setTutorData] = useState<TutorData[]>([]);
+
 
     //Fetch user profile on component mount
     useEffect(()=>{
@@ -82,10 +83,14 @@ const Profile = () => {
                 setProfileData(userRes);
 
                 try{
-                    const tutorRes = await tutorApi.getApplicationByEmail(currentUserEmail);
-                    setTutorData(tutorRes);
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                }catch(tutorError){
+                   const tutorRes = await tutorApi.getApplicationByEmail(currentUserEmail);
+                   const normalized = Array.isArray(tutorRes) ? tutorRes : [tutorRes];
+                   setTutorData(normalized.map(app => ({
+                    ...app,
+                    sessionType: Array.isArray(app.sessionType) ? app.sessionType : [app.sessionType]
+                })));
+
+                }catch{
                     console.warn("Tutor Application not found or failed to fetch");
                 }
 
@@ -222,78 +227,87 @@ const renderActiveProfileSection = () => {
             </Box>
         );
         case "Application Details":
-            return tutorData? (
+            return tutorData.length > 0 ? (
             <Box {...sectionStyle}>
-
-                 <Grid templateColumns = "repeat(2, 1fr)" gap ={4}>
-
+                {tutorData.map((app, i) => (
+                    <Box key={i} border="1px solid #CBD5E0" p={4} borderRadius="md" mb={4} bg="gray.50">
+                        <Text fontSize="lg" fontWeight="bold" mb={2} color="blue.600">
+                            Application {i + 1}: {Array.isArray(app.sessionType) ? app.sessionType.join(", ") : app.sessionType}
+                        </Text>
+                    <Grid templateColumns="repeat(2, 1fr)" gap={4}>
                     <GridItem>
-                    <Text fontWeight="bold">Role Applied:</Text>
-                    <Text>{tutorData.sessionType}</Text>
+                        <Text fontWeight="bold">Availability:</Text>
+                        <Text>{app.availability}</Text>
                     </GridItem>
-
+                    
                     <GridItem>
-                    <Text fontWeight="bold">Availability:</Text>
-                    <Text>{tutorData.availability}</Text>
+                        <Text fontWeight="bold">Submitted On:</Text>
+                        <Text>{new Date(app.timestamp).toLocaleDateString()}</Text>
                     </GridItem>
-
-                    <GridItem colSpan={1}>
-                    <Text fontWeight="bold">Courses Applied:</Text>
-                    <Box pl={2}>
-                        {tutorData.courses.map((course, index)=>(
-                            <Text key ={index}> -{course.courseCode} {course.courseName} </Text>
-                        ))}
-                    </Box>
-                    </GridItem>
-
-                    <GridItem colSpan={1}>
-                    <Text fontWeight="bold">Previous Roles:</Text>
-                    <Box pl={2}>
-                        {tutorData.previousRoles.map((role, index)=>(
-                            <Text key ={index}> -{role}</Text>
-                        ))}
-                    </Box>
-                    </GridItem>
-                </Grid>
-        </Box>
-        ):(
-            <Box p={4}>
-                No Tutor Application Details found.
-            </Box>
-        );
-        case "Qualifications & Skills":
-            return tutorData ? (
-
-            <Box {...sectionStyle}>
-                 <Grid templateColumns = "repeat(2, 1fr)" gap ={4}>
+                    
                     <GridItem colSpan={2}>
-                        <Text fontWeight="bold">Academic Credentials:</Text>
+                        <Text fontWeight="bold" mt={2}>Courses Applied:</Text>
                         <Box pl={4}>
-                            {tutorData.user?.credentials.length ? (
-                                tutorData.user?.credentials.map((cred, index) => (
-                                    <Text key = {index}>- {cred.qualification} from {cred.institution} ({cred.year}) </Text>
-                                ))
-                            ):
-                            (
-                                <Text>No Credentials Submitted</Text>
-                            )
-                            }
+                        {app.courses.map((course, idx) => (
+                            <Text key={idx}>- {course.courseCode} {course.courseName}</Text>
+                            ))}
                         </Box>
                     </GridItem>
-
                     <GridItem colSpan={2}>
-                     <Text fontWeight="bold">Skills:</Text>
-                     <Text>{(tutorData.user?.skills??[]).map(skill => skill.skillName).join(",")}</Text>
+                        <Text fontWeight="bold" mt={2}>Previous Roles:</Text>
+                        <Box pl={4}>
+                            {app.previousRoles.map((role, idx) => (
+                                <Text key={idx}>- {role}</Text>
+                                ))}
+                        </Box>
                     </GridItem>
-                 </Grid>
+                </Grid>
             </Box>
-            ) : (
-                <Text>No Qualifications and Skills found.</Text>  
+         ))}
+         </Box>
+         ) : (
+         <Box p={4}>No Tutor Application Details found.</Box>
         );
-    default:
-        return null;
-    }
-};
+
+        case "Qualifications & Skills":
+            return tutorData.length > 0 ? (
+            <Box {...sectionStyle}>
+                {tutorData.map((app, i) => (
+                    <Box key={i} border="1px solid #CBD5E0" p={4} borderRadius="md" mb={4} bg="gray.50">
+                        <Text fontSize="lg" fontWeight="bold" mb={2} color="blue.600">
+                            Application {i + 1}: {app.sessionType.join(", ")}
+                        </Text>
+                        
+                        <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                            <GridItem colSpan={2}>
+                                <Text fontWeight="bold">Academic Credentials:</Text>
+                                <Box pl={4}>
+                                    {app.user?.credentials?.length ? (
+                                        app.user.credentials.map((cred, index) => (
+                                        <Text key={index}>
+                                            - {cred.qualification} from {cred.institution} ({cred.year})
+                                        </Text>
+                                        ))
+                                    ) : (
+                                <Text>No Credentials Submitted</Text>
+                            )}
+                        </Box>
+                    </GridItem>
+                    <GridItem colSpan={2}>
+                        <Text fontWeight="bold">Skills:</Text>
+                        <Text>{app.user?.skills?.map((s) => s.skillName).join(", ") || "No Skills Submitted"}</Text>
+                        </GridItem>
+                        </Grid>
+                        </Box>
+                    ))}
+                    </Box>
+                    ) : (
+                    <Text>No Qualifications and Skills found.</Text>
+                );
+                default:
+                    return null;
+                }
+            };
 
 return(
     <>
@@ -325,6 +339,7 @@ return(
  
         {/* Passing tutor data as a prop */}
         <ProfileHeader activeMenu={activeMenu} onMenuChange={setActiveMenu} tutorData={tutorData} />
+
 
         {renderActiveProfileSection()}
     </Box>

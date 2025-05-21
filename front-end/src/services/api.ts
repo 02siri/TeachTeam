@@ -6,6 +6,7 @@ export const api = axios.create({
 });
 
 export interface Tutor {
+    email: string;
     applicationID: number;
     sessionType: string[];
     courses: {
@@ -51,10 +52,11 @@ export const tutorApi = {
       const res = await api.get("/applications");
       return res.data;
     }, 
-    getApplicationByEmail: async (email: string) => {
+    getApplicationByEmail: async (email: string): Promise<Tutor[]> => {
       const res = await api.get(`/applications/${email}`);
       return res.data;
-    },      
+    },
+  
     getCourses: async () => {
       const res = await api.get("/courses");
       return res.data;

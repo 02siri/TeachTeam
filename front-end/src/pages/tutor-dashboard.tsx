@@ -33,12 +33,19 @@ const MotionVStack = motion(VStack);
 
 export interface Tutor {
   email: string;
-  role: string[];
-  courses: string[];
+  role?: string[];
+  sessionType: string | string[]; 
+  courses: { courseCode: string; courseName: string; semester: string; description: string }[];
   previousRoles: string[];
   availability: string;
   timestamp: string;
+  user?: {
+    skills?: { skillName: string }[];
+    credentials?: { qualification: string; institution: string; year: number }[];
+  };
 }
+
+
 
 const TutorDashboard = () => {
   const {currentUserEmail} = useAuth();   //get the currently authenticated user..
@@ -65,21 +72,11 @@ const TutorDashboard = () => {
   ]);  
   const [customSkills, setCustomSkills] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});    
-  interface Application {
-    sessionType?: string;
-    role?: string[];
-    courses?: string[];
-    previousRoles?: string[];
-    availability?: string;
-    user?: {
-      skills?: { skillName: string }[];
-      credentials?: { qualification: string; institution: string; year: number }[];
-    };
-  }
-  const [existingApplication, setExistingApplication] = useState<Application | null>(null);
-  const appliedRole = existingApplication?.sessionType?.toLowerCase();
+  const [existingApplication, setExistingApplication] = useState<Tutor | null>(null);
+  const [appliedRoles, setAppliedRoles] = useState<string[]>([]);
   const [appliedCourseIds, setAppliedCourseIds] = useState<string[]>([]);
-
+  const STANDARD_SKILLS = React.useMemo(() => ["HTML", "CSS", "JAVASCRIPT", "REACT"], []);
+  const hasAppliedBothRoles = appliedRoles.includes("tutor") && appliedRoles.includes("lab");
 
 
 
@@ -155,48 +152,75 @@ const TutorDashboard = () => {
   
 
 
- useEffect(() => {
+useEffect(() => {
   const fetchApplication = async () => {
     if (!currentUserEmail || courseOptions.length === 0) return;
 
     try {
       const data = await tutorApi.getApplicationByEmail(currentUserEmail);
-      if (data) {
-        setExistingApplication(data);
+      if (data && data.length > 0) {
+        // Use the tutor application if available, otherwise pick the first one
+        const preferredApplication = data.find(app => app.sessionType.includes("tutor")) || data[0];
 
-        // Prefill role
-        if (data.role && data.role.length > 0) setRole(data.role[0]);
+        setExistingApplication({
+          ...preferredApplication,
+          email: preferredApplication.email ?? currentUserEmail,
+          sessionType: Array.isArray(preferredApplication.sessionType)
+            ? preferredApplication.sessionType[0] || ""
+            : preferredApplication.sessionType || ""
+        });
+        // Prefill sessionType as role
+        if (preferredApplication.sessionType && preferredApplication.sessionType.length > 0) {
+          const capitalized = preferredApplication.sessionType[0] === "tutor" ? "Tutor" : "Lab Assistant";
+          setRole(capitalized);
+        }
+        const rolesApplied = data.map(app => 
+          Array.isArray(app.sessionType)
+            ? app.sessionType[0]?.toLowerCase() || ""
+            : (app.sessionType as string).toLowerCase()
+        );
+        setAppliedRoles(rolesApplied);
+
+        
 
         // Prefill courses
-        if (data.courses?.length > 0) {
-          const selectedCourseIds = data.courses.map((c: { courseCode: string }) => c.courseCode);
+        if (preferredApplication.courses?.length > 0) {
+          const selectedCourseIds = preferredApplication.courses.map((c) => c.courseCode);
           const matched = courseOptions.filter(option =>
             selectedCourseIds.includes(option.id)
           );
           setCourses(matched);
+          setAppliedCourseIds(selectedCourseIds);
         }
-        if (data.courses?.length > 0) {
-          const selectedIds = data.courses.map((c: { courseCode: string }) => c.courseCode);
-          setAppliedCourseIds(selectedIds); 
-          }
+
+        // Prefill previous roles
+        if (preferredApplication.previousRoles) {
+          setPreviousRoles(preferredApplication.previousRoles);
+        }
+
+        // Prefill availability
+        if (preferredApplication.availability) {
+          setAvailability(preferredApplication.availability);
+        }
+
+        // Prefill skills
+        const skillNames = preferredApplication.user?.skills.map((s) => s.skillName) || [];
+        const normalizedSkillNames = skillNames.map(s => s.trim().toUpperCase());
+        const predefinedSelected = STANDARD_SKILLS.filter(skill => normalizedSkillNames.includes(skill));
+        const otherSkills = skillNames.filter((s) => !STANDARD_SKILLS.includes(s.trim().toUpperCase()));
+        const updatedSkills = [...predefinedSelected];
+        if (otherSkills.length > 0) {
+          updatedSkills.push("Other");
+        }
+        setSkills(updatedSkills);
+        setCustomSkills(otherSkills);
 
 
-
-        if (data.previousRoles) setPreviousRoles(data.previousRoles);
-        if (data.availability) setAvailability(data.availability);
-
-        const skillNames = data.user?.skills.map((s: { skillName: string }) => s.skillName) || [];
-        const standardSkills = ["HTML", "CSS", "JavaScript", "React"];
-        const custom = skillNames.filter((s: string) => !standardSkills.includes(s));
-        const selected = skillNames.filter((s: string) => standardSkills.includes(s));
-        if (custom.length > 0) selected.push("Other");
-        setSkills(selected);
-        setCustomSkills(custom);
-
-        const creds = data.user?.credentials || [];
+        // Prefill academic credentials
+        const creds = preferredApplication.user?.credentials || [];
         if (creds.length > 0) {
           setAcademicCred(
-            creds.map((c: { qualification: string; institution: string; year: number }) => ({
+            creds.map((c) => ({
               qualification: c.qualification,
               institution: c.institution,
               year: c.year.toString(),
@@ -204,14 +228,14 @@ const TutorDashboard = () => {
           );
         }
       }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
+    } catch{
       console.error("No application found for user");
     }
   };
 
   fetchApplication();
-}, [currentUserEmail, courseOptions]);
+}, [currentUserEmail, courseOptions, STANDARD_SKILLS]);
+
 
   
 
@@ -302,6 +326,9 @@ const TutorDashboard = () => {
     initial={{ opacity: 0 }} 
     animate={{ opacity: 1 }} 
     transition={{ duration: 0.5 }}>
+      <Box position="relative">
+          <Box filter={hasAppliedBothRoles ? "blur(3px)" : "none"} pointerEvents={hasAppliedBothRoles ? "none" : "auto"}>
+          
 
       {/*motion-enhanced vertical stack for the form*/}
       {/*it also has a motion effect that slides in from the top when the component mounts*/}
@@ -321,6 +348,7 @@ const TutorDashboard = () => {
         <Text fontSize="3xl" fontWeight="bold">
           Apply to Teach 
         </Text>
+        
         
         
         {/* Step 1: Role Selection */}
@@ -349,13 +377,24 @@ const TutorDashboard = () => {
               <MotionVStack
               spacing={2}
               onClick={() => {
-                if (!appliedRole || appliedRole !== "tutor") toggleRole("Tutor");
-              }}
-              pointerEvents={appliedRole === "tutor" ? "none" : "auto"}
-              opacity={appliedRole === "tutor" ? 0.6 : 1}
-              borderColor={appliedRole === "tutor" ? "gray.500" : role === "Tutor" ? "blue.500" : "gray.300"}
-              bg={appliedRole === "tutor" ? "gray.100" : role === "Tutor" ? "blue.50" : "white"}
-
+              if (!appliedRoles.includes("tutor")) toggleRole("Tutor");
+            }}
+            pointerEvents={appliedRoles.includes("tutor") ? "none" : "auto"}
+            opacity={appliedRoles.includes("tutor") ? 0.6 : 1}
+            borderColor={
+              appliedRoles.includes("tutor")
+              ? "gray.500"
+              : role === "Tutor"
+              ? "blue.500"
+              : "gray.300"
+            }
+            bg={
+              appliedRoles.includes("tutor")
+              ? "gray.100"
+              : role === "Tutor"
+              ? "blue.50"
+              : "white"
+            }
               cursor="pointer"
               align="center"
               borderWidth="2px"
@@ -374,17 +413,28 @@ const TutorDashboard = () => {
               {/*this is a motion-enhanced vertical stack for the Lab Assistant role*/}
               <MotionVStack
               spacing={2}
-               onClick={() => {
-                if (!appliedRole || appliedRole !== "lab") toggleRole("Lab Assistant");
-              }}
               cursor="pointer"
               align="center"
               borderWidth="2px"
-              pointerEvents={appliedRole === "lab" ? "none" : "auto"}
-              opacity={appliedRole === "lab" ? 0.6 : 1}
-              borderColor={appliedRole === "lab" ? "gray.500" : role === "Lab Assistant" ? "blue.500" : "gray.300"}
-              bg={appliedRole === "lab" ? "gray.100" : role === "Lab Assistant" ? "blue.50" : "white"}
-
+              onClick={() => {
+                if (!appliedRoles.includes("lab")) toggleRole("Lab Assistant");
+              }}
+              pointerEvents={appliedRoles.includes("lab") ? "none" : "auto"}
+              opacity={appliedRoles.includes("lab") ? 0.6 : 1}
+              borderColor={
+                appliedRoles.includes("lab")
+                ? "gray.500"
+                : role === "Lab Assistant"
+                ? "blue.500"
+                : "gray.300"
+              }
+              bg={
+                appliedRoles.includes("lab")
+                ? "gray.100"
+                : role === "Lab Assistant"
+                ? "blue.50"
+                : "white"
+              }
               p={3}
               rounded="md"
               _hover={{ borderColor: "blue.500" }}
@@ -459,7 +509,7 @@ const TutorDashboard = () => {
                 isDisabled={appliedCourseIds.includes(course.id)}
                 isChecked={!appliedCourseIds.includes(course.id) && courses.some((c) => c.id === course.id)}
                 onChange={() => {}}
-                opacity={((existingApplication as Tutor)?.courses || []).includes(course.id) ? 0.6 : 1}
+                opacity={((existingApplication as Tutor)?.courses || []).some((c) => c.courseCode === course.id) ? 0.6 : 1}
                 >
                   <Text fontWeight="medium">{course.id}: {course.name}</Text>
                   </Checkbox>
@@ -596,10 +646,11 @@ const TutorDashboard = () => {
               onChange={(value) => setSkills(value as string[])}
               >
                 <Stack spacing={3} pl={2}>
-                  <Checkbox value="HTML">HTML</Checkbox>
-                  <Checkbox value="CSS">CSS</Checkbox>
-                  <Checkbox value="JavaScript">JavaScript</Checkbox>
-                  <Checkbox value="React">React</Checkbox>
+                  {STANDARD_SKILLS.map((skill) => (
+                    <Checkbox key={skill} value={skill}>
+                      {skill}
+                      </Checkbox>
+                    ))}
                   <Checkbox
                   value="Other"
                   onChange={(e) => {
@@ -757,38 +808,57 @@ const TutorDashboard = () => {
                 {/*if the user doesn't fill in all the required fields, an error message is shown*/}
                 {/*the application data is saved to local storage*/}
                 {/*the user can also click the Save button to save their application data*/}                     
-                <Flex justify="center" mt={6}>
-  {!existingApplication ? (
-    <Button
-      onClick={handleApply}
-      px={6}
-      py={4}
-      borderRadius="full"
-      border="1px solid"
-      borderColor="green.500"
-      color="green.500"
-      bg="transparent"
-      _hover={{
-        bg: "green.500",
-        color: "white",
-        boxShadow: "0 0 10px rgba(0, 128, 0, 0.5)",
-      }}
-      transition="all 0.3s"
-      shadow="sm"
-    >
-      Apply
-    </Button>
-  ) : (
-    <Text fontSize="lg" fontWeight="bold" color="red.500" textAlign="center">
-      You have already applied for the {(typeof existingApplication === "object" && existingApplication && "role" in existingApplication && Array.isArray((existingApplication as Tutor).role)) ? (existingApplication as Tutor).role[0] : "selected"} role.
-    </Text>
-  )}
-</Flex>
+                <Flex direction="column" align="center" mt={6} gap={4}>
+                  <Button
+                  onClick={handleApply}
+                  px={6}
+                  py={4}
+                  borderRadius="full"
+                  border="1px solid"
+                  borderColor="green.500"
+                  color="green.500"
+                  bg="transparent"
+                  _hover={{
+                    bg: "green.500",
+                    color: "white",
+                    boxShadow: "0 0 10px rgba(0, 128, 0, 0.5)",
+                  }}
+                  transition="all 0.3s"
+                  shadow="sm"
+                  >
+                    Apply
+                    </Button>
+                    </Flex>
 
 
       </MotionVStack>
-    </MotionBox>
-    <Footer />
+      </Box>
+          {hasAppliedBothRoles && (
+            <Flex position="absolute" top={0} left={0} w="100%" h="100%" align="center" justify="center" zIndex={10} p={6}>
+              <Box
+              bgGradient="linear(to-br, white, gray.100)"
+              p={8}
+              rounded="2xl"
+              shadow="2xl"
+              textAlign="center"
+              maxW="lg"
+              border="1px solid"
+              borderColor="gray.200"
+              >
+                <Text fontSize="2xl" fontWeight="bold" mb={4} color="blue.800">
+                   🎉 You&apos;ve already applied for both roles!
+                   </Text>
+                   <Text fontSize="md" color="gray.700">
+                     You have submitted applications for both <strong>Tutor</strong> and <strong>Lab Assistant</strong>.
+                     <br />
+                      Please go to your <strong>Profile</strong> to check your application status or contact the admin for updates.
+                   </Text>
+                  </Box>
+                </Flex>
+                )}
+              </Box>
+          </MotionBox>
+      <Footer />
     </>
   );
 };
