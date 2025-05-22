@@ -8,7 +8,7 @@ export const api = axios.create({
 export interface Tutor {
     email: string;
     applicationID: number;
-    sessionType: string[];
+    sessionType: "tutor" | "lab";
     courses: {
       toLowerCase(): unknown;
       split(arg0: string): unknown;courseID: number; courseCode: string; courseName: string; semester: string; description: string
@@ -17,7 +17,7 @@ export interface Tutor {
     availability: string;
     timestamp: string;
     rank?: number | null;
-    comments?: number | null;
+    comments?: string | null;
     isSelected: boolean;
     selectedCourses : {courseID: number; courseCode: string; courseName: string; semester: string; description: string}[];
     status : "pending" | "approved" | "rejected";
@@ -81,7 +81,11 @@ export const tutorApi = {
       status?:"pending" | "approved" | "rejected";
       isSelected ?: boolean;
     }) => {
-      const res = await api.patch(`/applications/${applicationId}`, updateData);
+      const {selectedCourseIDs, ...rest} = updateData;
+      const res = await api.patch(`/applications/${applicationId}`, {
+        ...rest,
+        selectedCourseId : selectedCourseIDs,
+      });
       return res.data;
     },
   

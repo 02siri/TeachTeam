@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion} from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import React from "react";
@@ -20,22 +20,27 @@ import {
   Th,
   Td,
   TableContainer,
+  useToast,
 } from "@chakra-ui/react";
 
-import {api, tutorApi, Tutor, userApi} from "../services/api";
+import {tutorApi, Tutor} from "../services/api";
 
 /**
- * Extended applicant interface to combine tutor and user details for frontend
+ * Extended applicant interface to combine tutor details for frontend
  */
 interface DisplayApplicant extends Tutor{
-  role: any;
-  name: string; //Combined firstName and lastName
-  academicCred : string; //formatted academic credentails
-  skills: string[]; //formatted skills
+  name: string; 
+  academicCred : string; 
+  skills: string[];
+  formattedCourses : string[];
 }
 
 // Create a motion-enabled Box component using Framer Motion for animations
 const MotionBox = motion(Box);
+
+const capitalizeWords = (str: string): string => {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 /**
  * LecturerDashboard Component
@@ -49,6 +54,8 @@ const MotionBox = motion(Box);
  * - Submit final selections
  */
 const LecturerDashboard = () => {
+  const toast = useToast();
+
   // Main state management
   const [applicants, setApplicants] = useState<DisplayApplicant[]>([]); // All applicants in the system
  const [rankErrors, setRankErrors] = useState<{ [key: string]: string }>({}); // Error messages for invalid rankings
@@ -68,6 +75,13 @@ const LecturerDashboard = () => {
   const [view, setView] = useState<"selection" | "submitted">("selection"); // Current view mode
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  //Selection, ranking and comments state, indexed by applicationID
+  const [selectedApplicants, setSelectedApplicants] = useState<{[id:number] : boolean}>({}); //stores selection status by applicationID
+  const [rankedApplicants, setRankedApplicants] = useState<{[id:number] : number}>({}) //stores rank by applicationID
+  const [comments, setComments] = useState<{[id:number] : string}>({}) //stores comments by applicationID
+  const [courseSelections, setCourseSelections] = useState<{[id:number] : number[]}>({}); //stores selected course IDs by applicationID
+  const [submittedData, setSubmittedData] = useState<DisplayApplicant[]>([]); //stores all the data of submitted applicants
   
   /* Helper function to format academic credentials */
   const formatAcadCred = (credentials : {qualification: string; institution: string; year: number}[]) => {
@@ -75,8 +89,8 @@ const LecturerDashboard = () => {
   }
   
   /* Helper function to format courses */
-  const formatCourses = (courses : {courseCode: string; courseName: string}[]) => {
-    return courses.map((c)=> `${c.courseCode} - ${c.courseName}`);
+  const formatCourseforDisplay = (courses : {courseCode: string; courseName: string}[]) => {
+    return courses.map((c)=> `${c.courseCode} ${c.courseName}`);
   }
 
   /**
@@ -86,21 +100,54 @@ const LecturerDashboard = () => {
   
   const fetchApplicants = useCallback(async() => {
       try{
-        setLoading(true);
-        const applications = await tutorApi.getAllApplications();
+        
+        const applications = await tutorApi.getAllApplications(); //fetches all applications
 
         const formattedApplications : DisplayApplicant[] =applications.map((app: Tutor) => {
           const name = app.user ? `${app.user.firstName} ${app.user.lastName}` : "N/A";
           const academicCred = app.user ? formatAcadCred(app.user.credentials) : "No Academic Credentials";
 
-          const skills = app.user ? app.user.skills.map((s) => s.skillName).join(", ") : [];
+          const skills = app.user ? app.user.skills.map((s) => s.skillName) : [];
 
           return{
-            ...app,name,academicCred,skills,courses : formatCourses(app.courses);
-          }
+            ...app,
+            name,
+            academicCred,
+            skills,
+            formattedCourses : formatCourseforDisplay(app.courses),
+          };
         });
 
         setApplicants(formattedApplications);
+
+        //initialize/restore selection, rank and comments from fetched data
+        const initialSelected : {[id:number] : boolean} = {};
+        const initialRanks : {[id:number] : number} = {};
+        const initialComments : {[id: number] : string} = {};
+        const initialCoursesSelected : {[id: number] : number[]} = {};
+        
+        formattedApplications.forEach(app => {
+          if(app.isSelected){
+            initialSelected[app.applicationID] = true;
+
+            if(app.rank!== undefined && app.rank!==null){
+              initialRanks[app.applicationID] = app.rank;
+            }
+
+            if(app.comments){
+              initialComments[app.applicationID] = app.comments;
+            }
+
+            if(app.selectedCourses && app.selectedCourses.length>0){
+              initialCoursesSelected[app.applicationID] = app.selectedCourses.map(c => c.courseID);
+            }
+          }
+        });
+
+        setSelectedApplicants(initialSelected);
+        setRankedApplicants(initialRanks);
+        setComments(initialComments);
+        setCourseSelections(initialCoursesSelected);
 
       }catch(error){
         console.error("Failed to fetch applications : ", error);
@@ -123,45 +170,6 @@ const LecturerDashboard = () => {
     fetchApplicants();
   },[fetchApplicants]);
   
-  /**
-   * Restore previously saved selections when returning to selection view
-   * Loads selected applicants, rankings, comments, and course selections
-   */
-  useEffect (() => {
-    if(view === "selection"){
-      // Load previously selected applicants
-      const existingDataString = localStorage.getItem("selectedApplicants");
-      const existingData : Applicant[] = existingDataString ? JSON.parse(existingDataString) : [];
-
-      // Restore selected state for checkboxes
-      setSelectedApplicants(existingData);
-
-      // Restore previously assigned rankings
-      const restoreRanks : Applicant[]  = existingData
-      .filter((a)=>a.rank !==undefined)
-      .map((a)=>({...a}));
-      setRankedApplicants(restoreRanks);
-
-      // Restore previously entered comments
-      const restoreComments: {[name:string]:string} = {};
-      existingData.forEach((a)=>{
-        if(a.comments){
-          restoreComments[a.name]=a.comments;
-        }
-      });
-      setComments(restoreComments);
-
-      // Restore previously selected courses
-      const restoreCourseSelections : {[name:string]:string[]} = {};
-      existingData.forEach((a)=>{
-        if(a.selectedCourses){
-          restoreCourseSelections[a.name] = a.selectedCourses;
-        }
-      });
-      setCourseSelections(restoreCourseSelections);
-    }
-  },[view]); // Runs when view changes between "selection" and "submitted"
-
   /**
    * Handles changes to filter input fields
    * Validates input and updates filter state
@@ -200,7 +208,7 @@ const LecturerDashboard = () => {
    * Case-insensitive partial matching for all fields
    */
   const filteredApplicants = applicants.filter((applicant) => {
-    const matchesCourse = !filter.course || applicant.courses.some((course) => course.toLowerCase().includes(filter.course.toLowerCase()));
+    const matchesCourse = !filter.course || applicant.formattedCourses.some((course) => course.toLowerCase().includes(filter.course.toLowerCase()));
     const matchesName = !filter.name || applicant.name.toLowerCase().includes(filter.name.toLowerCase());
     const matchesAvailability = !filter.availability || applicant.availability.toLowerCase().includes(filter.availability.toLowerCase());
     const matchesSkill = !filter.skill || applicant.skills.some((course)=>course.toLowerCase().includes(filter.skill.toLowerCase()));
@@ -220,12 +228,17 @@ const LecturerDashboard = () => {
    */
   const sortedApplicants = [...filteredApplicants].sort((a, b) => {
     if (sortedBy === "course") {
-      // Extract course name from format "ID - Name" and sort alphabetically
-      const aCourseName = a.courses[0]?.split(" - ")[1] || "";
-      const bCourseName = b.courses[0]?.split(" - ")[1] || "";
+      // Sort by first course name alpahbetically from formatted courses
+      const aCourseName = a.formattedCourses[0] || "";
+      const bCourseName = b.formattedCourses[0] || "";
       return aCourseName.localeCompare(bCourseName);
     } else if (sortedBy === "availability") {
       // For availability sorting, we do secondary sort by name
+      const availabilityComparison = a.availability.localeCompare(b.availability);
+
+      if(availabilityComparison!==0){
+        return availabilityComparison;
+      }
       return a.name.localeCompare(b.name);
     }
     return 0; // No sorting
@@ -233,56 +246,39 @@ const LecturerDashboard = () => {
   
   /**
    * Toggles selection state for an applicant
-   * Updates localStorage to persist selections
    */
-  const handleSelectApplicant = (applicant: Applicant) => {
-    setSelectedApplicants((prev) => {
-      const isSelected = prev.some((a) => a.name === applicant.name);
-  
-      if (isSelected) {
-        // Deselecting the applicant
-        const updatedSelectedApplicants = prev.filter((a) => a.name !== applicant.name);
-        
-        // Update localStorage to reflect deselection
-        localStorage.setItem("selectedApplicants", JSON.stringify(updatedSelectedApplicants));
-  
-        return updatedSelectedApplicants;
-      } else {
-        // Selecting the applicant
-        const updatedSelectedApplicants = [...prev, applicant];
-  
-        // Update localStorage to reflect selection
-        localStorage.setItem("selectedApplicants", JSON.stringify(updatedSelectedApplicants));
-  
-        return updatedSelectedApplicants;
-      }
-    });
+  const handleSelectApplicant = (applicantId: number) => {
+    setSelectedApplicants((prev)=>({
+      ...prev,
+      [applicantId] : !prev[applicantId],
+    }))
   };
   
   /**
    * Assigns a rank to an applicant and updates the ranked applicants list
-   * Ensures rank is not negative and sorts the list by rank
+   * Ensures rank is not negative
    */
-  const handleRankApplicant = (applicant: Applicant, rank: number) => {
+  const handleRankApplicant = (applicantId: number, rank: number) => {
     const validRank = Math.max(0,rank); // Ensure rank is not negative
-    setRankedApplicants((prev) => {
-      // Remove any existing rank for this applicant
-      const updated = prev.filter((a) => a.name !== applicant.name);
-      // Add applicant with new rank and sort the list
-      return [
-        ...updated,
-        { ...applicant, rank: validRank },
-      ].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0)); // Sort by rank (ascending)
-    });
+    setRankedApplicants((prev) => ({
+        ...prev,
+        [applicantId] : validRank,
+    }));
+
+    setRankErrors((prev) => {
+      const updated = {...prev};
+      delete updated[applicantId];
+      return updated;
+    })
   };
 
   /**
    * Updates comments for a specific applicant
    */
-  const handleCommentChange = (name: string, comment: string) => {
+  const handleCommentChange = (applicantId: number, comment: string) => {
     setComments({
       ...comments,
-      [name]: comment,
+      [applicantId]: comment,
     });
   };
 
@@ -290,79 +286,193 @@ const LecturerDashboard = () => {
    * Toggles course selection for an applicant
    * Either adds or removes a course from the selected courses list
    */
-  const handleCourseToggle = (applicantName: string, course:string) =>{
+  const handleCourseToggle = (applicantId: number, courseID:number) =>{
     setCourseSelections((prev)=>{
-      const selectedCourses = prev[applicantName] || [];
-      const updatedCourses = selectedCourses.includes(course)
-        ? selectedCourses.filter((c)=> c!==course) // Remove course if already selected
-        : [...selectedCourses, course]; // Add course if not selected
+      const selectedCourses = prev[applicantId] || [];
+      const updatedCourses = selectedCourses.includes(courseID)
+        ? selectedCourses.filter((id)=> id!==courseID) // Remove course if already selected
+        : [...selectedCourses, courseID]; // Add course if not selected
 
       return {
         ...prev,
-        [applicantName]:updatedCourses
+        [applicantId]:updatedCourses
       }
     });
   };
 
   /**
    * Handles final submission of selected applicants
-   * Validates ranks, merges with existing data, and saves to localStorage
+   * Validates ranks and sends updates to backend
    */
-const handleSubmit = () => {
-  // Get previously submitted data from local storage
-  const existingDataString = localStorage.getItem("selectedApplicants");
-  const existingData: Applicant[] = existingDataString ? JSON.parse(existingDataString) : [];
+const handleSubmit = async () => {
 
-  // Prepare new selected data with all details (courses, ranks, comments)
-  const selectedData = selectedApplicants.map((applicant) => ({
-    ...applicant,
-    selectedCourses: courseSelections[applicant.name] || [],
-    rank: rankedApplicants.find((r) => r.name === applicant.name)?.rank,
-    comments: comments[applicant.name],
-  }));
+  const newRankErrors: {[key: number] : string} = {}; //use number for keys
+  const selectedIds = Object.keys(selectedApplicants)
+    .filter((key) => selectedApplicants[parseInt(key)])
+    .map(Number); //convert keys to numbers
 
-  // Create an object to track ranks and detect duplicates
-  const rankTracker: { [key: string]: boolean } = {}; // Tracks whether a rank is already assigned
-  const newRankErrors: { [key: string]: string } = {}; // Temporary object to store errors
+    if(selectedIds.length === 0){
+      toast({
+        title: "No Applicant Selected",
+        description: "Please select at least one applicant before submitting",
+        status: "error",
+        duration: 5000,
+        isClosable: true
+      });
+      return;
+    }
 
-  // Check if any rank is duplicated only when rank is filled
-  selectedData.forEach((applicant) => {
-    const rank = applicant.rank;
-    if (rank) {
-      if (rankTracker[rank]) {
-        // If rank is already assigned, add error for this rank
-        newRankErrors[applicant.name] = `Rank ${rank} is already assigned to another applicant. Please choose a unique rank.`;
-      } else {
-        rankTracker[rank] = true;
+    selectedIds.forEach((id) => {
+      const selectedCourses = courseSelections[id] || [];
+      if(selectedCourses.length === 0){
+        newRankErrors[id] = "Please select atleast one course for this applicant";
+       
+      }
+    })
+
+     //check for duplicate ranks
+    const  ranksInUse: {[rank:number] : number[]} = {};
+    selectedIds.forEach((id) => {
+      const rank = rankedApplicants[id];
+
+      if(rank!==undefined && rank!==null){
+        if(ranksInUse[rank]){
+          ranksInUse[rank].push(id);
+        }else{
+          ranksInUse[rank] = [id]
+        }
+      }
+    });
+
+   
+    for(const rank in ranksInUse){
+      if(ranksInUse[rank].length>1){
+        ranksInUse[rank].forEach((id) => {
+          newRankErrors[id] = `Rank ${rank} is already assigned to another applicant. Please chooose a unique rank.`;
+        });
       }
     }
-  });
 
-  // If there are errors, prevent submission
-  if (Object.keys(newRankErrors).length > 0) {
-    setRankErrors(newRankErrors); // Set error messages
-    return; // Stop submission
-  }
-
-  // Merge & de-duplicate by name (update existing data)
-  const mergedData = selectedData.reduce((acc, newApplicant) => {
-    const existingIndex = acc.findIndex((existing) => existing.name === newApplicant.name);
-    if (existingIndex > -1) {
-      // Update the existing applicant's data
-      acc[existingIndex] = { ...acc[existingIndex], ...newApplicant };
-    } else {
-      // Add the new applicant
-      acc.push(newApplicant);
+    if(Object.keys(newRankErrors).length>0){
+      setRankErrors(newRankErrors);
+      toast({
+        title: "Validation Error",
+        description: "Please resolve all validation errors before submitting",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    } else{
+      setRankErrors({});
     }
-    return acc;
-  }, existingData);
 
-  // Save merged data to local storage
-  localStorage.setItem("selectedApplicants", JSON.stringify(mergedData));
+    try{
+      setLoading(true);
+      const updatedApplications = selectedIds.map(async(id) => {
+        const app = applicants.find((a)=> a.applicationID === id);
+        if(!app){
+          throw new Error(`Applicantion with ID ${id} not found`);
+        }
 
-  // Save submitted data to state and switch to submitted view
-  setSubmittedData(mergedData);
-  setView("submitted");
+        const updateDetails = {
+          rank: rankedApplicants[id] ?? null,
+          comments: comments[id] ?? null,
+          selectedCourseIDs : courseSelections[id] ?? [],
+          status: "approved" as "approved" | "rejected",
+          isSelected: true,
+        };
+
+        //call backend API to update the application
+        await tutorApi.updateApplicationByLecturer(app.applicationID, updateDetails);
+
+        //Return full applicant object with updated fields for local state
+        return{
+          ...app,
+          ...updateDetails,
+          selectedCourses: app.courses.filter(course => updateDetails.selectedCourseIDs.includes(course.courseID)),
+        };
+      });
+
+      const successfulUpdation = await Promise.all(updatedApplications);
+      
+      //set submitted data and switch to 'submitted' view
+      setSubmittedData(successfulUpdation);
+      setView("submitted");
+
+      toast({
+        title: "Submitted",
+        description: "Applications submitted successfully",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    }catch(submitError){
+      console.error("Failed to submit applications: ", submitError);
+      toast({
+        title: "Submission Error",
+        description: "Failed to submit applications. Please try again",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      })
+    }finally{
+      setLoading(false);
+    }
+  // // Get previously submitted data from local storage
+  // const existingDataString = localStorage.getItem("selectedApplicants");
+  // const existingData: Applicant[] = existingDataString ? JSON.parse(existingDataString) : [];
+
+  // // Prepare new selected data with all details (courses, ranks, comments)
+  // const selectedData = selectedApplicants.map((applicant) => ({
+  //   ...applicant,
+  //   selectedCourses: courseSelections[applicant.name] || [],
+  //   rank: rankedApplicants.find((r) => r.name === applicant.name)?.rank,
+  //   comments: comments[applicant.name],
+  // }));
+
+  // // Create an object to track ranks and detect duplicates
+  // const rankTracker: { [key: string]: boolean } = {}; // Tracks whether a rank is already assigned
+  // const newRankErrors: { [key: string]: string } = {}; // Temporary object to store errors
+
+  // // Check if any rank is duplicated only when rank is filled
+  // selectedData.forEach((applicant) => {
+  //   const rank = applicant.rank;
+  //   if (rank) {
+  //     if (rankTracker[rank]) {
+  //       // If rank is already assigned, add error for this rank
+  //       newRankErrors[applicant.name] = `Rank ${rank} is already assigned to another applicant. Please choose a unique rank.`;
+  //     } else {
+  //       rankTracker[rank] = true;
+  //     }
+  //   }
+  // });
+
+  // // If there are errors, prevent submission
+  // if (Object.keys(newRankErrors).length > 0) {
+  //   setRankErrors(newRankErrors); // Set error messages
+  //   return; // Stop submission
+  // }
+
+  // // Merge & de-duplicate by name (update existing data)
+  // const mergedData = selectedData.reduce((acc, newApplicant) => {
+  //   const existingIndex = acc.findIndex((existing) => existing.name === newApplicant.name);
+  //   if (existingIndex > -1) {
+  //     // Update the existing applicant's data
+  //     acc[existingIndex] = { ...acc[existingIndex], ...newApplicant };
+  //   } else {
+  //     // Add the new applicant
+  //     acc.push(newApplicant);
+  //   }
+  //   return acc;
+  // }, existingData);
+
+  // // Save merged data to local storage
+  // localStorage.setItem("selectedApplicants", JSON.stringify(mergedData));
+
+  // // Save submitted data to state and switch to submitted view
+  // setSubmittedData(mergedData);
+  // setView("submitted");
 };
 
   return (
@@ -407,8 +517,7 @@ const handleSubmit = () => {
                 name="course" 
                 color = "blue.700" 
                 placeholder="Search by Course Name" 
-                value={filter.course
-                }
+                value={filter.course}
                 onChange={handleFilterChange} 
                 _hover={{
                   borderColor: "blue.500",
@@ -465,6 +574,13 @@ const handleSubmit = () => {
                   {inputErrors.name}
                 </Text>
               )}
+
+              {error && (
+                <Text color="red.800" fontWeight="semibold">
+                  {error}
+                </Text>
+            )}
+
             </Box>
 
             {/* Select Mode Toggle */}
@@ -479,10 +595,12 @@ const handleSubmit = () => {
             </Button>
 
             {/* Only show Submit button when in selection mode and at least one applicant is selected */}
-            {isSelecting && selectedApplicants.length>0 && (
+            {isSelecting && 
+            Object.values(selectedApplicants).some((isSelected)=> isSelected) &&(
               <Button 
                 onClick={handleSubmit} 
                 colorScheme = "green"
+                isLoading = {loading}
                 sx={{
                   cursor: "pointer",
                 }}
@@ -491,6 +609,8 @@ const handleSubmit = () => {
               </Button>
             )}
             </HStack>
+
+            
             
             {/* Applicants Table */}
             <Box overflowX="auto" bg="white" p={4} boxShadow="md" rounded="xl" maxWidth="100%">
@@ -514,13 +634,13 @@ const handleSubmit = () => {
               <Tbody>
                 {/* Map through filtered & sorted applicants to create table rows */}
                 {sortedApplicants.map((applicant) => (
-                  <Tr key={applicant.timestamp}>
+                  <Tr key={applicant.applicationID}>
                     {/* Selection checkbox - only shown in selection mode */}
                     {isSelecting && (
                       <Td textAlign="center">
                         <Checkbox
-                          onChange={() => handleSelectApplicant(applicant)}
-                          isChecked={selectedApplicants.some((a)=>a.name === applicant.name)}
+                          onChange={() => handleSelectApplicant(applicant.applicationID)}
+                          isChecked={!!selectedApplicants[applicant.applicationID]}
                         />
                       </Td>
                     )}
@@ -532,10 +652,10 @@ const handleSubmit = () => {
                         {applicant.courses.map((course, idx) => (
                           <Checkbox
                             key={idx}
-                            isChecked={courseSelections[applicant.name]?.includes(course)}
-                            onChange={() => handleCourseToggle(applicant.name, course)}
+                            isChecked={courseSelections[applicant.applicationID]?.includes(course.courseID)}
+                            onChange={() => handleCourseToggle(applicant.applicationID, course.courseID)}
                           >
-                            {course}
+                            {`${course.courseCode} ${course.courseName}`}
                           </Checkbox>
                         ))}
                       </VStack>
@@ -544,13 +664,13 @@ const handleSubmit = () => {
                     
                     {/* Basic applicant information */}
                     <Td textAlign="center" fontWeight="semibold">{applicant.name}</Td>
-                    <Td textAlign="center">{applicant.role.join(", ")}</Td>
+                    <Td textAlign="center">{capitalizeWords(applicant.sessionType)}</Td>
                     <Td textAlign="center">{applicant.academicCred}</Td>
                     
                     {/* Course list with styled boxes */}
                     <Td>
                       <VStack wrap="wrap">
-                      {applicant.courses.map((course, index)=>(
+                      {applicant.formattedCourses.map((course, index)=>(
                         <Box key = {index} 
                         px={2}
                         py={1}
@@ -560,14 +680,14 @@ const handleSubmit = () => {
                         color="blue.800"
                         width="fit-content"
                         >
-                         {course}
+                          {course}
                       </Box>
                       ))}
                     </VStack>
                     </Td>
                     
-                    <Td textAlign="center">{applicant.skills.join(", ")}</Td>
-                    <Td textAlign="center">{applicant.availability}</Td>
+                    <Td textAlign="center">{capitalizeWords(applicant.skills.join(", "))}</Td>
+                    <Td textAlign="center">{capitalizeWords(applicant.availability)}</Td>
                     
                     {/* Ranking and comments - only shown in selection mode */}
                     {isSelecting && (
@@ -579,26 +699,26 @@ const handleSubmit = () => {
                             p={4}
                             m={4}
                             placeholder="Rank"
-                            value = {rankedApplicants.find((r)=>r.name === applicant.name)?.rank || ""}
-                            onChange={(e) => handleRankApplicant(applicant, Number(e.target.value))}
+                            value = {rankedApplicants[applicant.applicationID]|| ""}
+                            onChange={(e) => handleRankApplicant(applicant.applicationID, Number(e.target.value))}
                           />
                           {/* Display rank validation errors */}
-                          {rankErrors[applicant.name] && (
-                          <div className="error-message" style={{ color: 'red' }} >{rankErrors[applicant.name]}</div>
+                          {rankErrors[applicant.applicationID] &&  !rankErrors[applicant.applicationID].includes("course") && (
+                          <div className="error-message" style={{ color: 'red' }} >{rankErrors[applicant.applicationID]}</div>
                           )}
                         </Td>
                         <Td textAlign="center">
                           <Textarea
                             size="sm"
                             placeholder="Comments"
-                            value={comments[applicant.name] || ""}
-                            onChange={(e) => handleCommentChange(applicant.name, e.target.value)}
+                            value={comments[applicant.applicationID] || ""}
+                            onChange={(e) => handleCommentChange(applicant.applicationID, e.target.value)}
                           />
                         </Td>
                       </>
                     )}
                     
-                    <Td textAlign="center">{applicant.previousRoles?.join(", ") || "No previous roles"}</Td>
+                    <Td textAlign="center">{applicant.previousRoles?.map(role => capitalizeWords(role)).join(", ") || "No previous roles"}</Td>
                   </Tr>
                 ))}
               </Tbody>
@@ -641,7 +761,7 @@ const handleSubmit = () => {
               <Tbody>
                 {/* Map through submitted applicants */}
                 {submittedData.map((applicant) => (
-                  <Tr key={applicant.timestamp}>
+                  <Tr key={applicant.applicationID}>
                     <Td textAlign="center">{applicant.name}</Td>
                     <Td textAlign="center">{applicant.rank}</Td>
                     <Td textAlign="center">{applicant.comments || "No comments"}</Td>
@@ -659,7 +779,7 @@ const handleSubmit = () => {
                               color="blue.800"
                               width="fit-content"
                             >
-                              {course}
+                               {`${course.courseCode} ${course.courseName}`}
                             </Box>
                           ))
                         ) : (
@@ -677,11 +797,11 @@ const handleSubmit = () => {
                         )}
                       </VStack>
                     </Td>
-                    <Td textAlign="center">{applicant.role.join(", ")}</Td>
+                    <Td textAlign="center">{capitalizeWords(applicant.sessionType)}</Td>
                     <Td textAlign="center">{applicant.academicCred}</Td>
                     <Td textAlign="center">
                     <VStack wrap="wrap">
-                      {applicant.courses.map((course, index)=>(
+                      {applicant.formattedCourses.map((course, index)=>(
                         <Box key = {index} 
                         px={2}
                         py={1}
@@ -691,14 +811,14 @@ const handleSubmit = () => {
                         color="blue.800"
                         width="fit-content"
                         >
-                         {course}
+                          {course}
                       </Box>
                       ))}
                     </VStack>
                     </Td>
-                    <Td textAlign="center">{applicant.skills.join(", ")}</Td>
-                    <Td textAlign="center">{applicant.availability}</Td>
-                    <Td textAlign="center">{applicant.previousRoles?.join(", ") || "No previous roles"}</Td>
+                    <Td textAlign="center">{capitalizeWords(applicant.skills.join(", "))}</Td>
+                    <Td textAlign="center">{capitalizeWords(applicant.availability)}</Td>
+                    <Td textAlign="center">{applicant.previousRoles?.map(role => capitalizeWords(role)).join(", ") || "No previous roles"}</Td>
                   </Tr>
                 ))}
               </Tbody>

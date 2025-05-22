@@ -59,7 +59,7 @@ export class ApplicationController {
       const appRepo = AppDataSource.getRepository(Application);
   
       const applications = await appRepo.find({
-        relations: ["user", "courses","selectedCourses"], 
+        relations: ["user","user.skills","user.credentials","courses","selectedCourses"], 
         order: { timestamp: "DESC" },   
       });
   
