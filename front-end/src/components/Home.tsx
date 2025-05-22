@@ -19,6 +19,7 @@ import { BarChart,
   Radar, 
   Cell, 
   Legend} from 'recharts';
+import { Tutor, tutorApi } from "@/services/api";
 
 
 //home page
@@ -61,16 +62,18 @@ const Home = () => {
   const [lastUpdated, setLastUpdated] = useState("");
 
   interface Applicant {
-      name?: string;
-      email?: string;
-      selectedCourses?: string[];
-      courses?: { id: string; name: string }[];
-      [key: string]: string | string[] | { id: string; name: string }[] | undefined;
-  }
+  name?: string;
+  email?: string;
+  selectedCourses?: string[];
+  courses?: { id: string; name: string }[];
+  skills?: string[];
+  role?: string[];
+  availability?: string;
+}
+
   
   const [mostChosen, setMostChosen] = useState<Applicant | null>(null);
   const [leastChosen, setLeastChosen] = useState<Applicant | null>(null);
-  const [, setUnselectedApplicants] = useState<Applicant[]>([]);
   const [rankChartData, setRankChartData] = useState<{ name: string; count: number }[]>([]);
   const [selectionPieData, setSelectionPieData] = useState<{ name: string; value: number }[]>([]);
 
@@ -79,188 +82,130 @@ const Home = () => {
   //useEffect hook to fetch the applications from local storage...
   //it fetches the applications from local storage and updates the application statistics...
   useEffect(() => {
-    const applications = Object.keys(localStorage)
-      .filter((key) => key.endsWith("_applicationData"))
-      .map((key) => JSON.parse(localStorage.getItem(key) || "{}"));
+  const fetchStats = async () => {
+    try {
+      const applications: Tutor[] = await tutorApi.getAllApplications();
+      setTotalApplications(applications.length);
 
-    setTotalApplications(applications.length);
+      const coursesMap: { [key: string]: { id: string; name: string; count: number } } = {};
+      const skillsMap: { [key: string]: number } = {};
+      const rolesMap = { Tutor: 0, "Lab Assistant": 0 };
+      const availabilityMap = { "Part-Time": 0, "Full-Time": 0 };
 
-   
-    
-    //initialize the maps to store the statistics..
-    const coursesMap: { [key: string]: { id: string; name: string; count: number } } = {};         //the coursesMap is used to store the courses and their count...   
-    const skillsMap: { [key: string]: number } = {};         //the skillsMap is used to store the skills and their count...
-    const rolesMap = {                                       //the rolesMap is used to store the roles and their count...
-      Tutor: 0,
-      "Lab Assistant": 0
-    };
-    const availabilityMap = {
-      "Part-Time": 0,
-      "Full-Time": 0
-    };
+      applications.forEach((app) => {
+        app.courses.forEach((course) => {
+          if (!coursesMap[course.courseID]) {
+            coursesMap[course.courseID] = {
+              id: course.courseID.toString(),
+              name: course.courseCode,
+              count: 1,
+            };
+          } else {
+            coursesMap[course.courseID].count += 1;
+          }
+        });
 
-    interface Course {
-      id: string;
-      name: string;
+        app.user?.skills.forEach((skill) => {
+          skillsMap[skill.skillName] = (skillsMap[skill.skillName] || 0) + 1;
+        });
+
+        if (app.sessionType === "tutor") rolesMap["Tutor"]++;
+        else if (app.sessionType === "lab") rolesMap["Lab Assistant"]++;
+
+        if (["Part-Time", "Full-Time"].includes(app.availability)) {
+          availabilityMap[app.availability as "Part-Time" | "Full-Time"]++;
+        }
+      });
+
+      setApplicationStats({
+        courses: coursesMap,
+        skills: skillsMap,
+        roles: rolesMap,
+        availability: availabilityMap,
+      });
+
+      setLastUpdated(
+        new Date().toLocaleString("en-AU", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    } catch (err) {
+      console.error("Failed to fetch application stats:", err);
     }
+  };
 
+  fetchStats();
+}, []);
 
-    //loop through each application and populate the maps
-    applications.forEach((app) => {
-      app.courses?.forEach((course: Course) => {
-        if (!coursesMap[course.id]) {
-          coursesMap[course.id] = {
-            id: course.id,
-            name: course.name,
-            count: 1,
-          };
-        } else {
-          coursesMap[course.id].count += 1;
-        }
-      });
-
-      //count skills
-      app.skills?.forEach((skill: string) => {
-        skillsMap[skill] = (skillsMap[skill] || 0) + 1;
-      });
-
-      //count roles
-      app.role?.forEach((r: string) => {
-        if (r === "Tutor" || r === "Lab Assistant") {
-          rolesMap[r]++;
-        }
-      });
-
-      //saave summary statistics... 
-      if (app.availability === "Part-Time" || app.availability === "Full-Time") {
-        availabilityMap[app.availability as "Part-Time" | "Full-Time"]++;
-      }
-    });
-    //convert coursesMap to an array of objects
-    setApplicationStats({
-      courses: coursesMap,
-      skills: skillsMap,
-      roles: rolesMap,
-      availability: availabilityMap
-    });
-
-
-
-    //set the last updated time to the current time
-    //this is used to show the last updated time of the application statistics...
-    const formatted = new Date().toLocaleString("en-AU", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    setLastUpdated(formatted);
-  }, []);
-  
-  
-
-
-  //effect 2: useEffect hook to fetch the selected applicants from local storage...
-  // it fetches the selected applicants from local storage and updates the most and least chosen applicants...
-  // it also updates the unselected applicants based on the selection count...
-  // it also updates the rank chart data and selection pie data...
-  interface Applicant {
-    name?: string;
-    email?: string;
-    selectedCourses?: string[];
-    courses?: { id: string; name: string }[];
-    skills?: string[];
-    role?: string[];
-    availability?: string;
-  }
   
   
  useEffect(() => {
-  const allApplicants: Applicant[] = [];
-   const selectedApplicantsString = localStorage.getItem("selectedApplicants");
-   const selectedApplicants = selectedApplicantsString ? JSON.parse(selectedApplicantsString) : [];
+  const fetchInsights = async () => {
+    try {
+      const allApplicants = await tutorApi.getAllApplications();
+      const selectedApplicants = allApplicants.filter((app: Tutor) => app.isSelected);
 
-   const selectionCountMap: Record<string, number> = {};
-   //collect all applicant data..
-   Object.keys(localStorage).forEach((key) => {
-     if (key.endsWith("_applicationData")) {
-       const data = JSON.parse(localStorage.getItem(key) || "{}");
-       allApplicants.push(data);
-     }
-   });
+      const courseFrequencyMap: Record<string, number> = {};
+      selectedApplicants.forEach((app: Tutor) => {
+        app.selectedCourses?.forEach((course: { courseCode: string }) => {
+          const courseCode = course.courseCode;
+          courseFrequencyMap[courseCode] = (courseFrequencyMap[courseCode] || 0) + 1;
+        });
+      });
 
-   //count frequency of selected courses..
-  const courseCountMap: Record<string, number> = {};
-  (selectedApplicants as Applicant[]).forEach((app) => {
-    const courses = app.selectedCourses || [];
-    courses.forEach((course: string) => {
-      const courseCode = course.split(" - ")[0]; // Get only the course code
-      courseCountMap[courseCode] = (courseCountMap[courseCode] || 0) + 1;
-    });
-  });
+      const rankData = Object.entries(courseFrequencyMap).map(([name, count]) => ({
+        name,
+        count,
+      }));
+      setRankChartData(rankData);
 
+      let most: Applicant | null = null;
+      let least: Applicant | null = null;
+      let highestScore = -Infinity;
+      let lowestScore = Infinity;
 
-  const chartData = Object.entries(courseCountMap).map(([name, count]) => ({
-    name,
-    count,
-  }));
-  setRankChartData(chartData);
+      selectedApplicants.forEach((app: Tutor) => {
+        const totalScore = app.selectedCourses?.reduce((acc, course) => {
+          return acc + (courseFrequencyMap[course.courseCode] || 0);
+        }, 0) || 0;
 
+        if (totalScore > highestScore) {
+          highestScore = totalScore;
+          most = {
+            name: `${app.user?.firstName} ${app.user?.lastName}`,
+            email: app.email,
+            selectedCourses: app.selectedCourses.map(c => c.courseCode),
+          };
+        }
 
-  const courseFrequencyMap: Record<string, number> = {};
-  (selectedApplicants as Applicant[]).forEach((app) => {
-    (app.selectedCourses || []).forEach((course: string) => {
-      const courseCode = course.split(" - ")[0];
-      courseFrequencyMap[courseCode] = (courseFrequencyMap[courseCode] || 0) + 1;
-    });
-  });
-  (selectedApplicants as Applicant[]).forEach((app) => {
-    const id = app.email;
-    if (id) {
-      selectionCountMap[id] = (selectionCountMap[id] || 0) + 1;
+        if (totalScore < lowestScore) {
+          lowestScore = totalScore;
+          least = {
+            name: `${app.user?.firstName} ${app.user?.lastName}`,
+            email: app.email,
+            selectedCourses: app.selectedCourses.map(c => c.courseCode),
+          };
+        }
+      });
+
+      setMostChosen(most);
+      setLeastChosen(least);
+
+      const unselected = allApplicants.filter((app: Tutor) => !app.isSelected);
+      setSelectionPieData([
+        { name: "Selected", value: selectedApplicants.length },
+        { name: "Not Selected", value: unselected.length },
+      ]);
+    } catch (err) {
+      console.error("Failed to fetch lecturer insights:", err);
     }
-  });
-  let most: Applicant | null = null;
-  let least: Applicant | null = null;
+  };
 
-  let highestScore = -Infinity;
-  let lowestScore = Infinity;
-  (selectedApplicants as Applicant[]).forEach((app) => {
-    const courses = app.selectedCourses || [];
-    if (courses.length === 0) return;
-    const totalScore = courses.reduce((acc: number, course: string) => {
-      const courseCode = course.split(" - ")[0];
-      return acc + (courseFrequencyMap[courseCode] || 0);
-    }, 0);
-    if (totalScore > highestScore) {
-      highestScore = totalScore;
-      most = app;
-    }
-    if (totalScore < lowestScore) {
-      lowestScore = totalScore;
-      least = app;
-    }
-  });
-  setMostChosen(most);
-  setLeastChosen(least);
-
-
-  const rankData = Object.entries(courseFrequencyMap).map(([name, count]) => ({
-    name,
-    count,
-  }));
-  setRankChartData(rankData);
-
-
-  const unselected = allApplicants.filter((app: Applicant) =>
-    !selectedApplicants.some((s: Applicant) => s.email === app.email)
-  );
-  setUnselectedApplicants(unselected);
-  setSelectionPieData([
-    { name: "Selected", value: selectedApplicants.length },
-    { name: "Not Selected", value: allApplicants.length - selectedApplicants.length },
-  ]);
+  fetchInsights();
 }, []);
 
 
