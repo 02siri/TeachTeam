@@ -134,6 +134,7 @@ export class ApplicationController {
 
         application.selectedCourses = coursesToSelect;
         application.isSelected = true;
+       
        } else if(selectedCourseId === null || selectedCourseId === undefined){
         application.selectedCourses = [];
         application.isSelected = false;

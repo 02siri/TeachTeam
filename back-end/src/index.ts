@@ -16,10 +16,25 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] Incoming Request: ${req.method} ${req.originalUrl}`);
+  // If it's an OPTIONS request, log headers too
+  if (req.method === 'OPTIONS') {
+    console.log('  OPTIONS Request Headers:', req.headers);
+  }
+  next();
+});
+
 app.use(cors({
   origin: 'http://localhost:3000',
-  credentials: true
+  credentials: true,
+  // methods : ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 }));
+
+app.options('*', (req, res) => {
+  res.sendStatus(200);
+});
+
 app.use(express.json());
 app.use("/api", userRoutes);
 app.use("/api", authRoutes);

@@ -97,8 +97,6 @@ const Header = () => {
               )}
               </>
               )}
-
-
         </ul>
         {/* User authentication buttons */}
         {/* If the user is logged in, a welcome message and logout button are displayed */}

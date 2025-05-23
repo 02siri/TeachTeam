@@ -7,7 +7,7 @@ export const api = axios.create({
 
 export interface Tutor {
     email: string;
-    applicationID: number;
+    applicationId: number;
     sessionType: "tutor" | "lab";
     courses: {
       toLowerCase(): unknown;
@@ -82,7 +82,7 @@ export const tutorApi = {
       isSelected ?: boolean;
     }) => {
       const {selectedCourseIDs, ...rest} = updateData;
-      const res = await api.patch(`/applications/${applicationId}`, {
+      const res = await api.post(`/applications/${applicationId}`, {
         ...rest,
         selectedCourseId : selectedCourseIDs,
       });

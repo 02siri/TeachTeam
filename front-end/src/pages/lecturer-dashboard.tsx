@@ -76,7 +76,7 @@ const LecturerDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  //Selection, ranking and comments state, indexed by applicationID
+  //Selection, ranking and comments state, indexed by applicationId
   const [selectedApplicants, setSelectedApplicants] = useState<{[id:number] : boolean}>({}); //stores selection status by applicationID
   const [rankedApplicants, setRankedApplicants] = useState<{[id:number] : number}>({}) //stores rank by applicationID
   const [comments, setComments] = useState<{[id:number] : string}>({}) //stores comments by applicationID
@@ -128,18 +128,18 @@ const LecturerDashboard = () => {
         
         formattedApplications.forEach(app => {
           if(app.isSelected){
-            initialSelected[app.applicationID] = true;
+            initialSelected[app.applicationId] = true;
 
             if(app.rank!== undefined && app.rank!==null){
-              initialRanks[app.applicationID] = app.rank;
+              initialRanks[app.applicationId] = app.rank;
             }
 
             if(app.comments){
-              initialComments[app.applicationID] = app.comments;
+              initialComments[app.applicationId] = app.comments;
             }
 
             if(app.selectedCourses && app.selectedCourses.length>0){
-              initialCoursesSelected[app.applicationID] = app.selectedCourses.map(c => c.courseID);
+              initialCoursesSelected[app.applicationId] = app.selectedCourses.map(c => c.courseID);
             }
           }
         });
@@ -307,11 +307,9 @@ const LecturerDashboard = () => {
 const handleSubmit = async () => {
 
   const newRankErrors: {[key: number] : string} = {}; //use number for keys
-  const selectedIds = Object.keys(selectedApplicants)
-    .filter((key) => selectedApplicants[parseInt(key)])
-    .map(Number); //convert keys to numbers
+  const applicantsToSubmit = applicants.filter(applicant => selectedApplicants[applicant.applicationId]);
 
-    if(selectedIds.length === 0){
+    if(applicantsToSubmit.length === 0){
       toast({
         title: "No Applicant Selected",
         description: "Please select at least one applicant before submitting",
@@ -322,24 +320,24 @@ const handleSubmit = async () => {
       return;
     }
 
-    selectedIds.forEach((id) => {
-      const selectedCourses = courseSelections[id] || [];
-      if(selectedCourses.length === 0){
-        newRankErrors[id] = "Please select atleast one course for this applicant";
-       
+    //Now, iterate directly over applicants to submit
+    applicantsToSubmit.forEach((app) => {
+      const selectedCourses = courseSelections[app.applicationId] || [];
+      if(selectedCourses.length === 0){ 
+          newRankErrors[app.applicationId] = "Please select atleast one course for this applicant";
       }
     })
-
+    
      //check for duplicate ranks
     const  ranksInUse: {[rank:number] : number[]} = {};
-    selectedIds.forEach((id) => {
-      const rank = rankedApplicants[id];
+    applicantsToSubmit.forEach((app) => {
+      const rank = rankedApplicants[app.applicationId];
 
       if(rank!==undefined && rank!==null){
         if(ranksInUse[rank]){
-          ranksInUse[rank].push(id);
+          ranksInUse[rank].push(app.applicationId);
         }else{
-          ranksInUse[rank] = [id]
+          ranksInUse[rank] = [app.applicationId]
         }
       }
     });
@@ -369,22 +367,17 @@ const handleSubmit = async () => {
 
     try{
       setLoading(true);
-      const updatedApplications = selectedIds.map(async(id) => {
-        const app = applicants.find((a)=> a.applicationID === id);
-        if(!app){
-          throw new Error(`Applicantion with ID ${id} not found`);
-        }
-
+      const updatedApplications = applicantsToSubmit.map(async(app) => {
         const updateDetails = {
-          rank: rankedApplicants[id] ?? null,
-          comments: comments[id] ?? null,
-          selectedCourseIDs : courseSelections[id] ?? [],
+          rank: rankedApplicants[app.applicationId] ?? null,
+          comments: comments[app.applicationId] ?? null,
+          selectedCourseIDs : courseSelections[app.applicationId] ?? [],
           status: "approved" as "approved" | "rejected",
           isSelected: true,
         };
 
         //call backend API to update the application
-        await tutorApi.updateApplicationByLecturer(app.applicationID, updateDetails);
+        await tutorApi.updateApplicationByLecturer(app.applicationId, updateDetails);
 
         //Return full applicant object with updated fields for local state
         return{
@@ -634,13 +627,13 @@ const handleSubmit = async () => {
               <Tbody>
                 {/* Map through filtered & sorted applicants to create table rows */}
                 {sortedApplicants.map((applicant) => (
-                  <Tr key={applicant.applicationID}>
+                  <Tr key={applicant.applicationId}>
                     {/* Selection checkbox - only shown in selection mode */}
                     {isSelecting && (
                       <Td textAlign="center">
                         <Checkbox
-                          onChange={() => handleSelectApplicant(applicant.applicationID)}
-                          isChecked={!!selectedApplicants[applicant.applicationID]}
+                          onChange={() => handleSelectApplicant(applicant.applicationId)}
+                          isChecked={!!selectedApplicants[applicant.applicationId]}
                         />
                       </Td>
                     )}
@@ -652,13 +645,16 @@ const handleSubmit = async () => {
                         {applicant.courses.map((course, idx) => (
                           <Checkbox
                             key={idx}
-                            isChecked={courseSelections[applicant.applicationID]?.includes(course.courseID)}
-                            onChange={() => handleCourseToggle(applicant.applicationID, course.courseID)}
+                            isChecked={courseSelections[applicant.applicationId]?.includes(course.courseID)}
+                            onChange={() => handleCourseToggle(applicant.applicationId, course.courseID)}
                           >
                             {`${course.courseCode} ${course.courseName}`}
                           </Checkbox>
                         ))}
                       </VStack>
+                      {rankErrors[applicant.applicationId] && rankErrors[applicant.applicationId].includes("course") && (
+                        <div className="error-message" style={{ color: 'red' }} >{rankErrors[applicant.applicationId]}</div>
+                      )}
                     </Td>
                     )}
                     
@@ -699,20 +695,20 @@ const handleSubmit = async () => {
                             p={4}
                             m={4}
                             placeholder="Rank"
-                            value = {rankedApplicants[applicant.applicationID]|| ""}
-                            onChange={(e) => handleRankApplicant(applicant.applicationID, Number(e.target.value))}
+                            value = {rankedApplicants[applicant.applicationId]|| ""}
+                            onChange={(e) => handleRankApplicant(applicant.applicationId, Number(e.target.value))}
                           />
                           {/* Display rank validation errors */}
-                          {rankErrors[applicant.applicationID] &&  !rankErrors[applicant.applicationID].includes("course") && (
-                          <div className="error-message" style={{ color: 'red' }} >{rankErrors[applicant.applicationID]}</div>
+                          {rankErrors[applicant.applicationId] &&  !rankErrors[applicant.applicationId].includes("course") && (
+                          <div className="error-message" style={{ color: 'red' }} >{rankErrors[applicant.applicationId]}</div>
                           )}
                         </Td>
                         <Td textAlign="center">
                           <Textarea
                             size="sm"
                             placeholder="Comments"
-                            value={comments[applicant.applicationID] || ""}
-                            onChange={(e) => handleCommentChange(applicant.applicationID, e.target.value)}
+                            value={comments[applicant.applicationId] || ""}
+                            onChange={(e) => handleCommentChange(applicant.applicationId, e.target.value)}
                           />
                         </Td>
                       </>
@@ -761,9 +757,9 @@ const handleSubmit = async () => {
               <Tbody>
                 {/* Map through submitted applicants */}
                 {submittedData.map((applicant) => (
-                  <Tr key={applicant.applicationID}>
+                  <Tr key={applicant.applicationId}>
                     <Td textAlign="center">{applicant.name}</Td>
-                    <Td textAlign="center">{applicant.rank}</Td>
+                    <Td textAlign="center">{applicant.rank || "N/A"}</Td>
                     <Td textAlign="center">{applicant.comments || "No comments"}</Td>
                     <Td>
                       <VStack wrap="wrap">
