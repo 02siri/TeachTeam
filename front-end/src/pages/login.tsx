@@ -344,7 +344,7 @@ export default function LoginPage(){
                             {/* Background animation layer */}
                             <span className ="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] transition-all duration-300 group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full"></span>
                             {/* Button text layer */}
-                            <span className="relative z-10">Sign In</span> 
+                            <span className="relative z-10">Login</span> 
                             </Button>
                             </motion.div>
                         </VStack>

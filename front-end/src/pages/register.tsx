@@ -6,6 +6,7 @@ import {userApi,} from "../services/api";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { AxiosError } from "axios";
+import Image from "next/image";
 
 function PasswordInput({value, onChange} : {value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>)=>void}) {
   const [show, setShow] = useState(false); // State to toggle password visibility
@@ -118,7 +119,7 @@ export default function SignUp(){
         if(!validateEmail(email)){
             setErrors((prev)=>({
                 ...prev,
-                email : "Email must end in '@rmit.edu.au' .",
+                email : "Email must end in '@student/staff.rmit.edu.au' .",
             }));
             hasErrors = true;
         }
@@ -133,8 +134,8 @@ export default function SignUp(){
         }
 
 if(!hasErrors){
+  setIsSubmitting(true);
     try {
-    setIsSubmitting(true);
     const response = await userApi.createUser({
       ...newUser,
       skills: [],
@@ -165,6 +166,8 @@ if(!hasErrors){
     }finally{
         setIsSubmitting(false);
     }
+}else{
+  setIsSubmitting(false);
 }
   }
 
@@ -195,14 +198,14 @@ if(!hasErrors){
             className="min-h-screen flex items-center justify-center relative text-white bg-black overflow-hidden"
         >
 
-        {/* Background image for the login page
+        {/* Background image for the login page */}
         <Image
         src="/loginBG.jpg"
         alt="Background"
         fill
         className="object-cover z-0"
         style={{ position: "absolute", inset: 0 }}/>
-         */}
+        
 
         {/* Register Card with animation that triggers when scrolled into view */}
         <motion.div
@@ -353,13 +356,14 @@ if(!hasErrors){
                  size = "lg" 
                  mt={4} 
                  rounded="full"
-                 onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
-                 onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
+                //  onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
+                //  onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
+                 cursor = "pointer"
                  isLoading = {isSubmitting}
                  disabled = {isSubmitting}
                  >
                 {/* Background animation layer */}
-                <span className ="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] transition-all duration-300 group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full"></span>
+                <span className ="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] transition-all duration-300 group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full pointer-events-none"></span>
                 {/* Button text layer */}
                 <span className="relative z-10">Register</span> 
                 </Button>
@@ -368,7 +372,7 @@ if(!hasErrors){
                 <Text mt={6} textAlign="center" color="#0E4C92">
                   Already Registered?{" "}
                   <Link href="/login" color="#0E4C92" fontWeight="bold" textDecor="underline">
-                    Sign In!
+                    Login!
                   </Link>
                 </Text>
               </form>
