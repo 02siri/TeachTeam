@@ -24,6 +24,7 @@ import {
     InputRightElement,
     Flex,
   } from "@chakra-ui/react";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -275,7 +276,7 @@ export default function LoginPage(){
                 transition = {{delay: 0.7, duration: 0.8}}
                 >
 
-                <Heading as = "h2" size = "lg" color = "#0E4C92" textAlign = "center" mb= {6}>Sign In</Heading>     
+                <Heading as = "h2" size = "lg" color = "#0E4C92" textAlign = "center" mb= {6}>Login</Heading>     
                 
                     {/* Login form with validation */}
                     <form onSubmit={handleSubmit} noValidate>
@@ -323,10 +324,12 @@ export default function LoginPage(){
                             >
                             <Button 
                             position= "relative" 
+                            cursor = "pointer"
                             overflow = "hidden"
                             bgGradient="linear(to-r, #0E4C92, #002147)" // Gradient background
                             _hover={{
                                 bgGradient:"linear(to-r,#002147,#0E4C92)", // Reverse gradient on hover
+                                cursor : "pointer"
                             }}
                             color="white"
                             fontWeight="semibold"
@@ -336,17 +339,25 @@ export default function LoginPage(){
                             size = "lg" 
                             mt={4} 
                             rounded="full"
-                            onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
-                            onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
+                            // onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
+                            // onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
                             isLoading = {isSubmitting}
                             disabled = {isSubmitting}>
                                 
                             {/* Background animation layer */}
-                            <span className ="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] transition-all duration-300 group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full"></span>
+                            <span className ="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] transition-all duration-300 group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full pointer-events-none"></span>
                             {/* Button text layer */}
                             <span className="relative z-10">Login</span> 
                             </Button>
                             </motion.div>
+
+                            <Text mt={6} textAlign="center" color="#0E4C92">
+                              New to TeachTeam?{" "}
+                              <Link href="/register" 
+                              className="inline-block text-[#0E4C92] font-bold underline cursor-pointer transition-transform duration-200 hover:scale-105">
+                              Register!
+                               </Link>
+                            </Text>
                         </VStack>
                     </form>
                 </motion.div>

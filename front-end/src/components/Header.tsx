@@ -66,16 +66,16 @@ const Header = () => {
             >Home
             </Link>
           </li>
-
-          <li>
+          {currentUserEmail && (
+              <>
+              <li>
             <Link 
              href = "/profile"
              className="px-4 py-2 rounded-full relative text-white transition-all duration-300 hover:text-blue-300 hover:shadow-[0_0_10px_rgba(173,216,230,0.8)]"
              >Profile
              </Link>
             </li>
-          {currentUserEmail && (
-              <>
+
               {currentUserEmail.endsWith("@student.rmit.edu.au") && (
                 <li>
                   <Link 

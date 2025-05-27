@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Button, Input, FormControl, useToast, FormLabel, Box, Text, Heading, InputGroup, InputRightElement, Flex, Link} from "@chakra-ui/react";
+import { Button, Input, FormControl, useToast, FormLabel, Box, Text, Heading, InputGroup, InputRightElement, Flex} from "@chakra-ui/react";
 import { motion , useInView } from "framer-motion";
 import { useRouter } from "next/router";
 import {userApi,} from "../services/api";
@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { AxiosError } from "axios";
 import Image from "next/image";
+import Link from "next/link";
 
 function PasswordInput({value, onChange} : {value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>)=>void}) {
   const [show, setShow] = useState(false); // State to toggle password visibility
@@ -142,7 +143,7 @@ if(!hasErrors){
       credentials: [],
     });
       toast({
-            title: "Your Sign Up was Successful ! ",
+            title: "Your Registration was Successful ! ",
               description: "Redirecting to Dashboard",
               status: "success",
               duration: 3000,
@@ -284,7 +285,7 @@ if(!hasErrors){
                 transition = {{delay: 0.7, duration: 0.8}}
                 >
 
-                <Heading as = "h2" size = "lg" color = "#0E4C92" textAlign = "center" mb= {6}>Sign Up</Heading>     
+                <Heading as = "h2" size = "lg" color = "#0E4C92" textAlign = "center" mb= {6}>Register</Heading>     
                 
                     {/* Register form with validation */}
                 <form onSubmit={handleSubmit}>
@@ -356,22 +357,22 @@ if(!hasErrors){
                  size = "lg" 
                  mt={4} 
                  rounded="full"
-                //  onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
-                //  onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
-                 cursor = "pointer"
+                 onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
+                 onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
                  isLoading = {isSubmitting}
                  disabled = {isSubmitting}
                  >
                 {/* Background animation layer */}
-                <span className ="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] transition-all duration-300 group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full pointer-events-none"></span>
+                <span className ="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] transition-all duration-300 group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full"></span>
                 {/* Button text layer */}
                 <span className="relative z-10">Register</span> 
                 </Button>
                 </motion.div>
 
                 <Text mt={6} textAlign="center" color="#0E4C92">
-                  Already Registered?{" "}
-                  <Link href="/login" color="#0E4C92" fontWeight="bold" textDecor="underline">
+                  Already a Member?{" "}
+                  <Link href="/login" 
+                   className="inline-block text-[#0E4C92] font-bold underline cursor-pointer transition-transform duration-200 hover:scale-105">
                     Login!
                   </Link>
                 </Text>
