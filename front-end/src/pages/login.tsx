@@ -329,7 +329,6 @@ export default function LoginPage(){
                             bgGradient="linear(to-r, #0E4C92, #002147)" // Gradient background
                             _hover={{
                                 bgGradient:"linear(to-r,#002147,#0E4C92)", // Reverse gradient on hover
-                                cursor : "pointer"
                             }}
                             color="white"
                             fontWeight="semibold"
@@ -339,8 +338,8 @@ export default function LoginPage(){
                             size = "lg" 
                             mt={4} 
                             rounded="full"
-                            // onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
-                            // onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
+                            onMouseDown={(e) => (e.currentTarget.style.cursor = "wait")} // Change cursor on click
+                            onMouseUp={(e) => (e.currentTarget.style.cursor = "pointer")}
                             isLoading = {isSubmitting}
                             disabled = {isSubmitting}>
                                 

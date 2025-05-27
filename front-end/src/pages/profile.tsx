@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import{ Box, Button, Flex, Grid, GridItem, Text, useToast} from "@chakra-ui/react";
+import{ background, Box, Button, Flex, Grid, GridItem, Text, useToast} from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import { userApi, tutorApi } from "@/services/api";
 import { useAuth } from "@/context/AuthLogic";
@@ -44,7 +44,7 @@ tutorData: TutorData[];
 }
 
 const ProfileHeader : React.FC<ProfileHeaderProps> = ({activeMenu, onMenuChange, tutorData}) => (
-    <Flex p={4} boxShadow = "sm" justify ="space-around" mb={4}>
+    <Flex p={4} boxShadow = "sm" justify ="space-around" mb={4} bg="blue.50">
         {profileMenuItems.map((item)=>(
             <Button 
             key={item} 
@@ -131,7 +131,8 @@ const renderActiveProfileSection = () => {
     const sectionStyle = {
         borderWidth: "1px",
         borderRadius: "md",
-        p: 6
+        p: 6,
+        background:"blue.50"
     };
 
     const labelStyle = {
@@ -232,7 +233,10 @@ const renderActiveProfileSection = () => {
                 {tutorData.map((app, i) => (
                     <Box key={i} border="1px solid #CBD5E0" p={4} borderRadius="md" mb={4} bg="gray.50">
                         <Text fontSize="lg" fontWeight="bold" mb={2} color="blue.600">
-                            Application {i + 1}: {Array.isArray(app.sessionType) ? app.sessionType.join(", ") : app.sessionType}
+                            Application {i + 1}: {" "}{
+                                app.sessionType
+                                .map((type)=>(type === "tutor" ? "Tutor" : type === "lab" ? "Lab Assistant": type))
+                            }
                         </Text>
                     <Grid templateColumns="repeat(2, 1fr)" gap={4}>
                     <GridItem>
@@ -275,7 +279,10 @@ const renderActiveProfileSection = () => {
                 {tutorData.map((app, i) => (
                     <Box key={i} border="1px solid #CBD5E0" p={4} borderRadius="md" mb={4} bg="gray.50">
                         <Text fontSize="lg" fontWeight="bold" mb={2} color="blue.600">
-                            Application {i + 1}: {app.sessionType.join(", ")}
+                            Application {i + 1}: {" "}{
+                                app.sessionType
+                                .map((type)=>(type === "tutor" ? "Tutor" : type === "lab" ? "Lab Assistant": type))
+                            }
                         </Text>
                         
                         <Grid templateColumns="repeat(2, 1fr)" gap={4}>
@@ -328,7 +335,7 @@ return(
    {/* Profile Box */}
     <Box
      width = "100%"
-     bg="whiteAlpha.900"
+     bg="white"
      borderRadius="md"
      boxShadow="md"
      p={8}
