@@ -10,9 +10,6 @@ export class AcademicCredential {
   @ManyToOne(() => Users, (user) => user.credentials)
   user: Users;
 
-    @ManyToOne(()=> Application, (application) => application.academicCredentials)
-  application: Application;
-
   @Column()
   qualification: string;
 

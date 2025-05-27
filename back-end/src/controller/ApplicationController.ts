@@ -10,90 +10,105 @@ import { normalizeSkills } from "../services/skillService";
 
 export class ApplicationController {
   static async createApplication(req: Request, res: Response) {
-    try {
-      console.log("Received application payload:", req.body);
+  try {
+    const {
+      email,
+      role,
+      courses,
+      previousRoles,
+      availability,
+      skills: applicationSkills,
+      academicCred: applicationCredentials,
+      timestamp,
+    } = req.body;
 
-      const { email, role, courses, previousRoles, availability, skills: applicationSkills, academicCred: applicationCredentials, timestamp } = req.body;
+    const userRepo = AppDataSource.getRepository(Users);
+    const courseRepo = AppDataSource.getRepository(Course);
+    const appRepo = AppDataSource.getRepository(Application);
+    const skillRepo = AppDataSource.getRepository(Skills);
+    const credentialRepo = AppDataSource.getRepository(AcademicCredential);
 
-      const userRepo = AppDataSource.getRepository(Users);
-      const courseRepo = AppDataSource.getRepository(Course);
-      const appRepo = AppDataSource.getRepository(Application);
-      const skillRepo = AppDataSource.getRepository(Skills);
-      const credentialRepo = AppDataSource.getRepository(AcademicCredential);
+    if (!Array.isArray(previousRoles)) {
+      return res.status(400).json({ error: "Invalid previousRoles format. Must be an array." });
+    }
 
-      if (!Array.isArray(previousRoles)) {
-        return res.status(400).json({ error: "Invalid previousRoles format. Must be an array." });
-      }
+    const user = await userRepo.findOneByOrFail({ email });
 
-      const user = await userRepo.findOneByOrFail({ email });
+    const courseList = await courseRepo.find({
+      where: { courseCode: In(courses) },
+    });
 
-      const courseList = await courseRepo.find({
-        where: { courseCode: In(courses) },
-      });
+    if (courseList.length === 0) {
+      return res.status(404).json({ error: "No matching courses found" });
+    }
 
-      if (courseList.length === 0) {
-        return res.status(404).json({ error: "No matching courses found" });
-      }
+    const application = appRepo.create({
+      user,
+      courses: courseList,
+      previousRoles,
+      sessionType: role[0]?.toLowerCase() === "tutor" ? "tutor" : "lab",
+      availability,
+      status: "pending",
+      isSelected: false,
+      timestamp: new Date(timestamp),
+    });
 
-      const application = appRepo.create({
-        user,
-        courses: courseList,
-        previousRoles,
-        sessionType: role[0]?.toLowerCase() === "tutor" ? "tutor" : "lab",
-        availability,
-        status: "pending",
-        isSelected: false,
-        timestamp: new Date(timestamp),
-      });
-      // --- Process Skills for the Application ---
-      const skillEntitiesForApplication: Skills[] = [];
-      if (applicationSkills && Array.isArray(applicationSkills) && applicationSkills.length > 0) {
-        const normalizedSkillNames = normalizeSkills(applicationSkills);
+    const savedApplication = await appRepo.save(application);
 
-        // Find existing skills or create new ones if they don't exist
-        for (const skillName of normalizedSkillNames) {
-          let skill = await skillRepo.findOne({ where: { skillName } });
-          if (!skill) {
-            // If skill doesn't exist, create it (this is where `addSkillsToCandidate` would typically do it)
-            skill = skillRepo.create({ skillName });
-            await skillRepo.save(skill);
-          }
-          skillEntitiesForApplication.push(skill);
+    const skillEntitiesForApplication: Skills[] = [];
+    if (Array.isArray(applicationSkills)) {
+      const normalizedSkillNames = normalizeSkills(applicationSkills);
+      for (const skillName of normalizedSkillNames) {
+        let skill = await skillRepo.findOne({ where: { skillName } });
+        if (!skill) {
+          skill = skillRepo.create({ skillName });
+          await skillRepo.save(skill);
         }
+        skillEntitiesForApplication.push(skill);
       }
-      application.skills = skillEntitiesForApplication; // Link to the application
+    }
+    savedApplication.skills = skillEntitiesForApplication;
 
-      // --- Process Academic Credentials for the Application ---
-      const academicCredentialEntitiesForApplication: AcademicCredential[] = [];
-      if (applicationCredentials && Array.isArray(applicationCredentials) && applicationCredentials.length > 0) {
-        for (const credData of applicationCredentials) {
-          // We need to either find an existing one or create a new one.
-          // For AcademicCredential, it's OneToMany to Application, so we'll create new instances
-          // and link them to this specific application.
-          let newCredential = credentialRepo.create({
+    //so here i changed relation fr academic credentials to ManyToMany
+    const academicCredentialEntitiesForApplication: AcademicCredential[] = [];
+
+    if (Array.isArray(applicationCredentials)) {
+      for (const credData of applicationCredentials) {
+        let credential = await credentialRepo.findOne({
+          where: {
             qualification: credData.qualification,
             institution: credData.institution,
             year: credData.year,
-            user: user, // Link to the user as well, if needed for user's profile
-           });
-          newCredential = await credentialRepo.save(newCredential);
-          academicCredentialEntitiesForApplication.push(newCredential);
+          },
+        });
+
+        if (!credential) {
+          credential = credentialRepo.create({
+            qualification: credData.qualification,
+            institution: credData.institution,
+            year: credData.year,
+            user: user, // optional: link to user if needed
+          });
+          await credentialRepo.save(credential);
         }
+
+        academicCredentialEntitiesForApplication.push(credential);
       }
-      application.academicCredentials = academicCredentialEntitiesForApplication;
-
-      await appRepo.save(application);
-
-      return res.status(201).json({
-        message: "Application submitted",
-        applicationId: application.applicationId,
-        courseCount: courseList.length,
-      });
-    } catch (err: any) {
-      console.error("ApplicationController Error:", err.message, err.stack);
-      return res.status(500).json({ error: "Internal server error", detail: err.message });
     }
+    savedApplication.academicCredentials = academicCredentialEntitiesForApplication;
+
+    await appRepo.save(savedApplication);
+
+    return res.status(201).json({
+      message: "Application submitted",
+      applicationId: savedApplication.applicationId,
+      courseCount: courseList.length,
+    });
+  } catch (err: any) {
+    console.error("ApplicationController Error:", err.message, err.stack);
+    return res.status(500).json({ error: "Internal server error", detail: err.message });
   }
+}
 
   static async getAllApplications(req: Request, res: Response) {
     try {

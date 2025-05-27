@@ -37,9 +37,10 @@ export class Application {
    @JoinTable({name: "application_skills"})
    skills: Skills[]
 
-  //Relation 4: Acad Creds applied by the candidate
-   @OneToMany(()=> AcademicCredential, (credential) => credential.application)
-   academicCredentials : AcademicCredential[];
+  @ManyToMany(() => AcademicCredential)
+  @JoinTable({ name: "application_credentials" })
+  academicCredentials: AcademicCredential[];
+
 
   //rank is optional
   @Column({nullable: true})
