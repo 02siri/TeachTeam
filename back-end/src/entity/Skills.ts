@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from "typeorm";
 import { Users } from "./Users"
+import { Application } from "./Application";
 
 @Entity()
 export class Skills {
@@ -10,5 +11,8 @@ export class Skills {
   skillName: string;
 
   @ManyToMany(() => Users, (user) => user.skills)
-  users: Users[]
+  users: Users[];
+
+  @ManyToMany(()=>Application, (application) => application.skills)
+  applications: Application[];
 }

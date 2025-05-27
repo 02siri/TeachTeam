@@ -29,10 +29,9 @@ import {tutorApi, Tutor} from "../services/api";
  * Extended applicant interface to combine tutor details for frontend
  */
 interface DisplayApplicant extends Tutor{
-  name: string; 
-  academicCred : string; 
-  skills: string[];
+  name: string;
   formattedCourses : string[];
+  academicCred : string;
 }
 
 // Create a motion-enabled Box component using Framer Motion for animations
@@ -105,15 +104,12 @@ const LecturerDashboard = () => {
 
         const formattedApplications : DisplayApplicant[] =applications.map((app: Tutor) => {
           const name = app.user ? `${app.user.firstName} ${app.user.lastName}` : "N/A";
-          const academicCred = app.user ? formatAcadCred(app.user.credentials) : "No Academic Credentials";
-
-          const skills = app.user ? app.user.skills.map((s) => s.skillName) : [];
+          const academicCred = app.user ? formatAcadCred(app.academicCredentials) : "No Academic Credentials";
 
           return{
             ...app,
             name,
             academicCred,
-            skills,
             formattedCourses : formatCourseforDisplay(app.courses),
           };
         });
@@ -211,7 +207,7 @@ const LecturerDashboard = () => {
     const matchesCourse = !filter.course || applicant.formattedCourses.some((course) => course.toLowerCase().includes(filter.course.toLowerCase()));
     const matchesName = !filter.name || applicant.name.toLowerCase().includes(filter.name.toLowerCase());
     const matchesAvailability = !filter.availability || applicant.availability.toLowerCase().includes(filter.availability.toLowerCase());
-    const matchesSkill = !filter.skill || applicant.skills.some((course)=>course.toLowerCase().includes(filter.skill.toLowerCase()));
+    const matchesSkill = !filter.skill || applicant.skills.some((skill)=>skill.skillName.toLowerCase().includes(filter.skill.toLowerCase()));
 
     // An applicant must match ALL active filters
     return (

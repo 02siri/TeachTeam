@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { application, Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { Skills } from "../entity/Skills";
 import { Users } from "../entity/Users"; 
@@ -35,6 +35,7 @@ export const addSkillsToCandidate = async (req: Request, res: Response) => {
     }
 
     user.skills = skillEntities;
+
     await userRepo.save(user);
 
     res.status(200).json({ message: "Skills saved successfully", skills: skillEntities });

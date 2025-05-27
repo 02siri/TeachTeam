@@ -5,13 +5,13 @@ import { Users } from "../entity/Users";
 
 export const addAcademicCredentials = async (req: Request, res: Response) => {
   try {
-    const { email, credentials } = req.body; 
+    const { email, credentials} = req.body; 
     const userRepo = AppDataSource.getRepository(Users);
     const credentialRepo = AppDataSource.getRepository(AcademicCredential);
-
+  
     const user = await userRepo.findOneBy({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
-
+  
     const newCreds = credentials.map((cred: any) => {
       const ac = new AcademicCredential();
       ac.user = user;

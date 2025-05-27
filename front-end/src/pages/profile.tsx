@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import{ background, Box, Button, Flex, Grid, GridItem, Text, useToast} from "@chakra-ui/react";
+import{ Box, Button, Flex, Grid, GridItem, Text, useToast} from "@chakra-ui/react";
 import { useRouter } from "next/router";
 import { userApi, tutorApi } from "@/services/api";
 import { useAuth } from "@/context/AuthLogic";
@@ -14,10 +14,8 @@ interface TutorData{
     previousRoles: string[];
     availability: string;
     timestamp: string;
-    user?:{
-      skills: {skillId: number; skillName: string}[];
-      credentials : {credentialId: number; qualification: string; institution : string; year: number}[];
-    };
+    skills: {skillId: number; skillName: string}[];
+    academicCredentials : {credentialId: number; qualification: string; institution : string; year: number}[];
 }
 
 interface UserProfile{
@@ -289,8 +287,8 @@ const renderActiveProfileSection = () => {
                             <GridItem colSpan={2}>
                                 <Text fontWeight="bold">Academic Credentials:</Text>
                                 <Box pl={4}>
-                                    {app.user?.credentials?.length ? (
-                                        app.user.credentials.map((cred, index) => (
+                                    {app.academicCredentials?.length ? (
+                                        app.academicCredentials.map((cred, index) => (
                                         <Text key={index}>
                                             - {cred.qualification} from {cred.institution} ({cred.year})
                                         </Text>
@@ -302,7 +300,7 @@ const renderActiveProfileSection = () => {
                     </GridItem>
                     <GridItem colSpan={2}>
                         <Text fontWeight="bold">Skills:</Text>
-                        <Text>{app.user?.skills?.map((s) => s.skillName).join(", ") || "No Skills Submitted"}</Text>
+                        <Text>{app.skills?.map((s) => s.skillName).join(", ") || "No Skills Submitted"}</Text>
                         </GridItem>
                         </Grid>
                         </Box>

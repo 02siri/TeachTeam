@@ -25,8 +25,7 @@ export class Application {
 
   @ManyToMany(() => Course, (course)=>course.applicationsSelectedFor)
   @JoinTable({name: "application_selected_courses"})
-  selectedCourses:
-   Course[];
+  selectedCourses:Course[];
 
   @Column({nullable: true})
   rank: number;

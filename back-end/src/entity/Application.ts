@@ -1,6 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTable } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTable, OneToMany } from "typeorm";
 import { Users } from "./Users";
 import { Course } from "./Course";
+import { Skills } from "./Skills";
+import { AcademicCredential } from "./AcademicCredential";
 
 @Entity()
 export class Application {
@@ -29,6 +31,15 @@ export class Application {
   @JoinTable({name: "application_selected_courses"})
   selectedCourses:
    Course[];
+
+   //Relation 3: Skills applied by the candidate
+   @ManyToMany(()=>Skills)
+   @JoinTable({name: "application_skills"})
+   skills: Skills[]
+
+  //Relation 4: Acad Creds applied by the candidate
+   @OneToMany(()=> AcademicCredential, (credential) => credential.application)
+   academicCredentials : AcademicCredential[];
 
   //rank is optional
   @Column({nullable: true})

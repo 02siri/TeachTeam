@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany } from "typeorm";
 import { Users } from "./Users";
+import { Application } from "./Application";
 
 @Entity()
 export class AcademicCredential {
@@ -8,6 +9,9 @@ export class AcademicCredential {
 
   @ManyToOne(() => Users, (user) => user.credentials)
   user: Users;
+
+    @ManyToOne(()=> Application, (application) => application.academicCredentials)
+  application: Application;
 
   @Column()
   qualification: string;

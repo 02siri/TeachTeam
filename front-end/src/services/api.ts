@@ -9,10 +9,7 @@ export interface Tutor {
     email: string;
     applicationId: number;
     sessionType: "tutor" | "lab";
-    courses: {
-      toLowerCase(): unknown;
-      split(arg0: string): unknown;courseID: number; courseCode: string; courseName: string; semester: string; description: string
-    }[];
+    courses: {courseID: number; courseCode: string; courseName: string; semester: string; description: string}[];
     previousRoles: string[];
     availability: string;
     timestamp: string;
@@ -21,6 +18,8 @@ export interface Tutor {
     isSelected: boolean;
     selectedCourses : {courseID: number; courseCode: string; courseName: string; semester: string; description: string}[];
     status : "pending" | "approved" | "rejected";
+    skills: {skillId: number; skillName: string}[];
+    academicCredentials : {credentialId: number; qualification: string; institution : string; year: number}[];
     user?:{
       id: number;
       firstName: string;

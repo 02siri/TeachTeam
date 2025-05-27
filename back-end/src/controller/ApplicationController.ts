@@ -4,17 +4,22 @@ import { Application } from "../entity/Application";
 import { Users } from "../entity/Users";
 import { Course } from "../entity/Course";
 import { In } from "typeorm";
+import { Skills } from "../entity/Skills";
+import { AcademicCredential } from "../entity/AcademicCredential";
+import { normalizeSkills } from "../services/skillService";
 
 export class ApplicationController {
   static async createApplication(req: Request, res: Response) {
     try {
       console.log("Received application payload:", req.body);
 
-      const { email, role, courses, previousRoles, availability, timestamp } = req.body;
+      const { email, role, courses, previousRoles, availability, skills: applicationSkills, academicCred: applicationCredentials, timestamp } = req.body;
 
       const userRepo = AppDataSource.getRepository(Users);
       const courseRepo = AppDataSource.getRepository(Course);
       const appRepo = AppDataSource.getRepository(Application);
+      const skillRepo = AppDataSource.getRepository(Skills);
+      const credentialRepo = AppDataSource.getRepository(AcademicCredential);
 
       if (!Array.isArray(previousRoles)) {
         return res.status(400).json({ error: "Invalid previousRoles format. Must be an array." });
@@ -40,6 +45,42 @@ export class ApplicationController {
         isSelected: false,
         timestamp: new Date(timestamp),
       });
+      // --- Process Skills for the Application ---
+      const skillEntitiesForApplication: Skills[] = [];
+      if (applicationSkills && Array.isArray(applicationSkills) && applicationSkills.length > 0) {
+        const normalizedSkillNames = normalizeSkills(applicationSkills);
+
+        // Find existing skills or create new ones if they don't exist
+        for (const skillName of normalizedSkillNames) {
+          let skill = await skillRepo.findOne({ where: { skillName } });
+          if (!skill) {
+            // If skill doesn't exist, create it (this is where `addSkillsToCandidate` would typically do it)
+            skill = skillRepo.create({ skillName });
+            await skillRepo.save(skill);
+          }
+          skillEntitiesForApplication.push(skill);
+        }
+      }
+      application.skills = skillEntitiesForApplication; // Link to the application
+
+      // --- Process Academic Credentials for the Application ---
+      const academicCredentialEntitiesForApplication: AcademicCredential[] = [];
+      if (applicationCredentials && Array.isArray(applicationCredentials) && applicationCredentials.length > 0) {
+        for (const credData of applicationCredentials) {
+          // We need to either find an existing one or create a new one.
+          // For AcademicCredential, it's OneToMany to Application, so we'll create new instances
+          // and link them to this specific application.
+          let newCredential = credentialRepo.create({
+            qualification: credData.qualification,
+            institution: credData.institution,
+            year: credData.year,
+            user: user, // Link to the user as well, if needed for user's profile
+           });
+          newCredential = await credentialRepo.save(newCredential);
+          academicCredentialEntitiesForApplication.push(newCredential);
+        }
+      }
+      application.academicCredentials = academicCredentialEntitiesForApplication;
 
       await appRepo.save(application);
 
@@ -59,7 +100,7 @@ export class ApplicationController {
       const appRepo = AppDataSource.getRepository(Application);
   
       const applications = await appRepo.find({
-        relations: ["user","user.skills","user.credentials","courses","selectedCourses"], 
+        relations: ["user","skills","academicCredentials","courses","selectedCourses"], 
         order: { timestamp: "DESC" },   
       });
   
@@ -78,11 +119,14 @@ export class ApplicationController {
         where: { user: { email } },
         relations: [
           "user", 
-          "user.skills",
-          "user.credentials",
+          "skills",
+          "academicCredentials",
           "courses",
           "selectedCourses"
         ],
+        order:{
+          timestamp: "desc"
+        }
       });
 
   
