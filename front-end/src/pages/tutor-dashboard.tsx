@@ -77,6 +77,7 @@ const TutorDashboard = () => {
   const [appliedCourseIds, setAppliedCourseIds] = useState<string[]>([]);
   const STANDARD_SKILLS = React.useMemo(() => ["HTML", "CSS", "JAVASCRIPT", "REACT"], []);
   const hasAppliedBothRoles = appliedRoles.includes("tutor") && appliedRoles.includes("lab");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
 
@@ -204,20 +205,17 @@ useEffect(() => {
         }
 
         // Prefill skills
-        const skillNames = preferredApplication.user?.skills.map((s) => s.skillName) || [];
-        const normalizedSkillNames = skillNames.map(s => s.trim().toUpperCase());
-        const predefinedSelected = STANDARD_SKILLS.filter(skill => normalizedSkillNames.includes(skill));
+        const skillNames = preferredApplication.skills?.map((s) => s.skillName) || [];
+        const normalizedSkillNames = skillNames.map((s) => s.trim().toUpperCase());
+        const predefinedSelected = STANDARD_SKILLS.filter((skill) => normalizedSkillNames.includes(skill));
         const otherSkills = skillNames.filter((s) => !STANDARD_SKILLS.includes(s.trim().toUpperCase()));
         const updatedSkills = [...predefinedSelected];
-        if (otherSkills.length > 0) {
-          updatedSkills.push("Other");
-        }
+        if (otherSkills.length > 0) updatedSkills.push("Other");
         setSkills(updatedSkills);
         setCustomSkills(otherSkills);
 
-
         // Prefill academic credentials
-        const creds = preferredApplication.user?.credentials || [];
+        const creds = preferredApplication.academicCredentials || [];
         if (creds.length > 0) {
           setAcademicCred(
             creds.map((c) => ({
@@ -226,7 +224,7 @@ useEffect(() => {
               year: c.year.toString(),
             }))
           );
-        }
+        }        
       }
     } catch{
       console.error("No application found for user");
@@ -260,46 +258,62 @@ useEffect(() => {
 
 
   const handleApply = async () => {
-    if (validateStep() && currentUserEmail) {
-      const applicationData = {
-        email: currentUserEmail,
-        role: [role],
-        sessionType: role === "Tutor" ? "tutor" : "lab",
-        courses: courses.map((c) => c.id),
-        previousRoles,
-        availability,
-        skills: mergedSkills,
-        academicCred: academicCredentialsPayload,
-        timestamp: new Date().toISOString(),
-      };
-  
-      try {
-        await tutorApi.submitApplication({
-          ...applicationData,
-          skills: mergedSkills,
-          academicCred: academicCredentialsPayload,
-          sessionType: []
-        });
-        
-        await tutorApi.submitSkills(currentUserEmail, skills, customSkills);
-        await tutorApi.submitCredentials(currentUserEmail, academicCredentialsPayload);
+  if (!validateStep() || !currentUserEmail) return;
 
-        toast({
-          position: "top",
-          duration: 2000,
-          isClosable: true,
-          render: () => (
-            <Box color="white" px={6} py={4} rounded="md" shadow="lg" bgGradient="linear(to-r, green.400, green.600)">
-              <Text fontWeight="bold" fontSize="lg">🎉 Application Submitted!</Text>
-              <Text mt={1}>Your application has been saved to the server.</Text>
-            </Box>
-          ),
-        });
-      } catch (error) {
-        console.error("Error saving tutor application", error);
-      }
-    }
+  setIsSubmitting(true); 
+
+  const applicationData = {
+    email: currentUserEmail,
+    role: [role],
+    sessionType: role === "Tutor" ? "tutor" : "lab",
+    courses: courses.map((c) => c.id),
+    previousRoles,
+    availability,
+    skills: mergedSkills,
+    academicCred: academicCredentialsPayload,
+    timestamp: new Date().toISOString(),
   };
+
+  try {
+    await tutorApi.submitApplication({
+      ...applicationData,
+      skills: mergedSkills,
+      academicCred: academicCredentialsPayload,
+      sessionType: [],
+    });
+
+    await tutorApi.submitSkills(currentUserEmail, skills, customSkills);
+    await tutorApi.submitCredentials(currentUserEmail, academicCredentialsPayload);
+
+    toast({
+      position: "top",
+      duration: 2000,
+      isClosable: true,
+      render: () => (
+        <Box
+          color="white"
+          px={6}
+          py={4}
+          rounded="md"
+          shadow="lg"
+          bgGradient="linear(to-r, green.400, green.600)"
+        >
+          <Text fontWeight="bold" fontSize="lg">🎉 Application Submitted!</Text>
+          <Text mt={1}>Your application has been saved to the server.</Text>
+        </Box>
+      ),
+    });
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+
+  } catch (error) {
+    console.error("Error saving tutor application", error);
+  } finally {
+    setTimeout(() => setIsSubmitting(false), 2000); 
+  }
+};
 
 
 
@@ -811,6 +825,8 @@ useEffect(() => {
                 <Flex direction="column" align="center" mt={6} gap={4}>
                   <Button
                   onClick={handleApply}
+                  isDisabled={isSubmitting || appliedRoles.includes(role.toLowerCase())}
+                  isLoading={isSubmitting}
                   px={6}
                   py={4}
                   borderRadius="full"
@@ -832,7 +848,7 @@ useEffect(() => {
 
 
       </MotionVStack>
-      </Box>
+        </Box>
           {hasAppliedBothRoles && (
             <Flex position="absolute" top={0} left={0} w="100%" h="100%" align="center" justify="center" zIndex={10} p={6}>
               <Box

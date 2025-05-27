@@ -243,8 +243,8 @@ const renderActiveProfileSection = () => {
                     </GridItem>
                     
                     <GridItem>
-                        <Text fontWeight="bold">Submitted On:</Text>
-                        <Text>{new Date(app.timestamp).toLocaleDateString()}</Text>
+                        <Text fontWeight="bold">Submitted:</Text>
+                        <Text>{new Date(app.timestamp).toLocaleString()}</Text>
                     </GridItem>
                     
                     <GridItem colSpan={2}>
