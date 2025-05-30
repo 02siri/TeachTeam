@@ -8,7 +8,10 @@ import {
   Flex,
   Icon,
   SimpleGrid,
+  Button,
+  ButtonGroup,
 } from "@chakra-ui/react";
+import { useState } from "react";
 import { FiUser } from "react-icons/fi";
 
 const GET_REPORTS = gql`
@@ -105,86 +108,93 @@ const SectionBox = ({
 
 const Reports = () => {
   const { data, loading, error } = useQuery<ReportsData>(GET_REPORTS);
+  const [activeReport, setActiveReport] = useState<"perCourse" | "moreThanThree" | "notChosen">("perCourse");
 
   if (loading) return <Spinner size="xl" mt={10} />;
   if (error) return <Box color="red.500">Error: {error.message}</Box>;
 
   return (
-    <Box
-    bgGradient="linear(to-br, blue.600, black)"
-    minH="100vh"
-    px={[4, 6, 12]}
-    py={16}
-  >
+    <Box bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={16}>
+      <Box px={6} py={10} maxW="6xl" mx="auto">
+        <Heading mb={6} textAlign="center" color="white" fontSize="3xl">
+          Admin Reports Dashboard
+        </Heading>
 
+        <ButtonGroup mb={10} display="flex" justifyContent="center">
+          <Button
+            colorScheme={activeReport === "perCourse" ? "blue" : "gray"}
+            onClick={() => setActiveReport("perCourse")}
+          >
+            Candidates Per Course
+          </Button>
+          <Button
+            colorScheme={activeReport === "moreThanThree" ? "blue" : "gray"}
+            onClick={() => setActiveReport("moreThanThree")}
+          >
+            More Than 3 Courses
+          </Button>
+          <Button
+            colorScheme={activeReport === "notChosen" ? "blue" : "gray"}
+            onClick={() => setActiveReport("notChosen")}
+          >
+            Not Chosen
+          </Button>
+        </ButtonGroup>
 
-    <Box px={6} py={10} maxW="6xl" mx="auto" >
-      <Heading mb={4} textAlign="center" textColor={"white"} fontSize="3xl" fontWeight="bold">
-        Admin Reports Dashboard
-      </Heading>
+        {activeReport === "perCourse" && (
+          <SectionBox title="Candidates Chosen Per Course">
+            {data?.candidatesChosenPerCourse.map(({ courseName, selectedCandidates }) => {
+              const namesList = selectedCandidates
+                .map((c) => `${c.firstName} ${c.lastName}`)
+                .join(", ");
+              return (
+                <Box key={courseName} mb={8}>
+                  <Text fontSize="lg" fontWeight="semibold" color="blue.700" mb={1}>
+                    {courseName} - {selectedCandidates.length} candidate(s)
+                  </Text>
+                  <Text fontSize="sm" color="gray.600" mb={3}>
+                    {namesList}
+                  </Text>
+                  <SimpleGrid columns={[1, 2]} spacing={4}>
+                    {selectedCandidates.map((candidate) => (
+                      <CandidateCard key={candidate.id} candidate={candidate} />
+                    ))}
+                  </SimpleGrid>
+                </Box>
+              );
+            })}
+          </SectionBox>
+        )}
 
-      
-      <SectionBox title="Candidates Chosen Per Course">
-        {data?.candidatesChosenPerCourse.map(({ courseName, selectedCandidates }) => {
-          const namesList = selectedCandidates
-          .map((c) => `${c.firstName} ${c.lastName}`)
-          .join(", ");
-          
-          return (
-          <Box key={courseName} mb={8}>
-            
-            <Text fontSize="lg" fontWeight="semibold" color="blue.700" mb={1}>
-              {courseName} - {selectedCandidates.length} candidate(s)
-            </Text>
-            
-            <Text fontSize="sm" color="gray.600" mb={3}>
-              {namesList}
-            </Text>
-            
-            
-            <SimpleGrid columns={[1, 2]} spacing={4}>
-              {selectedCandidates.map((candidate) => (
-                <CandidateCard key={candidate.id} candidate={candidate} />
+        {activeReport === "moreThanThree" && (
+          <SectionBox title="Candidates Chosen for More Than 3 Courses">
+            {data?.candidatesChosenForMoreThanThree.length ? (
+              <SimpleGrid columns={[1, 2, 3]} spacing={4}>
+                {data.candidatesChosenForMoreThanThree.map((candidate) => (
+                  <CandidateCard key={candidate.id} candidate={candidate} />
                 ))}
-            </SimpleGrid>
-            
-          </Box>
-          );
-          })}
-        </SectionBox>
-
-
-      <SectionBox title="Candidates Chosen for More Than 3 Courses">
-        {data?.candidatesChosenForMoreThanThree.length ? (
-
-          <SimpleGrid columns={[1, 2, 3]} spacing={4}>
-            {data.candidatesChosenForMoreThanThree.map((candidate) => (
-              <CandidateCard key={candidate.id} candidate={candidate} />
-            ))}
-          </SimpleGrid>
-
-        ) : (
-          <Text>No candidates found.</Text>
+              </SimpleGrid>
+            ) : (
+              <Text>No candidates found.</Text>
+            )}
+          </SectionBox>
         )}
-      </SectionBox>
 
-
-      
-      <SectionBox title="Candidates Not Chosen for Any Course">
-        {data?.candidatesNotChosen.length ? (
-
-          <SimpleGrid columns={[1, 2, 3]} spacing={4}>
-            {data.candidatesNotChosen.map((candidate) => (
-              <CandidateCard key={candidate.id} candidate={candidate} />
-            ))}
-          </SimpleGrid>
-          
-        ) : (
-          <Text>No candidates found.</Text>
+        {activeReport === "notChosen" && (
+          <SectionBox title="Candidates Not Chosen for Any Course">
+            {data?.candidatesNotChosen.length ? (
+              <SimpleGrid columns={[1, 2, 3]} spacing={4}>
+                {data.candidatesNotChosen.map((candidate) => (
+                  <CandidateCard key={candidate.id} candidate={candidate} />
+                ))}
+              </SimpleGrid>
+            ) : (
+              <Text>No candidates found.</Text>
+            )}
+          </SectionBox>
         )}
-      </SectionBox>
+      </Box>
     </Box>
-   </Box>
   );
 };
 
