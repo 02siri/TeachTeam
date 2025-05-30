@@ -7,6 +7,7 @@ import { AxiosError } from "axios";
 import Header from "@/components/Header";
 import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
+import Head from "next/head";
 
 interface TutorData{
     sessionType: string[];
@@ -42,16 +43,40 @@ tutorData: TutorData[];
 }
 
 const ProfileHeader : React.FC<ProfileHeaderProps> = ({activeMenu, onMenuChange, tutorData}) => (
-    <Flex p={4} boxShadow = "sm" justify ="space-around" mb={4} bg="blue.50">
-        {profileMenuItems.map((item)=>(
-            <Button 
-            key={item} 
-            variant = {activeMenu === item ? "solid" : "ghost"}
-            colorScheme="blue"
-            onClick={()=> onMenuChange(item)}
-            isDisabled = {item === "Application Details" && !tutorData}>
-            {item}
-            </Button>
+    <Flex 
+    p={4} 
+    boxShadow= "0 0 10px rgba(173, 216, 230, 0.8)" 
+    justify ="space-around" 
+    mb={4} 
+    bg="transparent" 
+    borderRadius="md"
+    >
+    {profileMenuItems.map((item)=>(
+    <Button
+    key={item}
+    variant="ghost"
+    colorScheme="blue"
+    onClick={() => onMenuChange(item)}
+    isDisabled={item === "Application Details" && !tutorData}
+    px={4}
+    py={2}
+    borderRadius="full"
+    color={activeMenu === item ? "blue.500" : "blue.700"}
+    transition="all 0.3s ease-in-out"
+    bg={activeMenu === item ? "blue.50" : "transparent"}
+    boxShadow={activeMenu === item ? "0 0 10px rgba(173, 216, 230, 0.8)" : "none"}
+    _hover={{
+        color: "blue.500",
+        boxShadow: "0 0 10px rgba(173, 216, 230, 0.8)",
+        bg: "blue.100"
+    }}
+    _focus={{
+        boxShadow: "0 0 10px rgba(173, 216, 230, 0.8)"
+    }}
+    >
+    {item}
+</Button>
+
         ))}
     </Flex>
 );
@@ -130,98 +155,130 @@ const renderActiveProfileSection = () => {
         borderWidth: "1px",
         borderRadius: "md",
         p: 6,
-        background:"blue.50"
+        background:"transparent",
+        height: "80%",
+        boxShadow: "0 0 10px rgba(173, 216, 230, 0.8)",
     };
 
     const labelStyle = {
-        fontWeight : "bold",
-        fontSize: "xl",
-        mb: 1,
+        fontSize : "lg",
+        fontWeight: "bold",
+        color : "black.100",
+        pb: 1
     };
+
+     const labelContentStyle = { 
+        border: "1px solid", 
+        borderColor: "gray.300",
+        borderRadius: "md", 
+        p: 3, 
+        background: "white", 
+        textColor: "blue.500",
+        fontWeight: "bold",
+        width: "100%", 
+        _focusWithin: { 
+            borderColor: "blue.500",
+            boxShadow: "0 0 0 1px #3182CE",
+        },
+    };
+
+     const DataDisplayItem = ({ label, children }: { label: string; children: React.ReactNode }) => (
+        <GridItem>
+            <Flex direction="column" align="center" justify="center">
+                <Text {...labelStyle} textAlign="center">{label}</Text>
+                <Box {...labelContentStyle}>
+                    <Text fontSize="lg" textAlign="center">{children}</Text>
+                </Box>
+            </Flex>
+        </GridItem>
+    );
 
     switch(activeMenu){
         case "Personal Details":
             return (
             <Box {...sectionStyle}>
                 <Grid templateColumns = "repeat(2, 1fr)" gap ={4}>
-                    <GridItem>
-                        <Text {...labelStyle}>First Name: </Text>
-                         <Box 
-                            width = "50%"
-                            border="1px" 
-                            borderRadius="md" 
-                            p={2}
-                            background="blue.500"
-                            textColor="white"
-                            fontWeight="bold"
-                        >
-                            <Text fontSize="lg">{profileData.firstName}</Text>
+                    {/* <GridItem>
+                        <Flex direction="column" align="center" justify="center">
+                        <Text {...labelStyle} textAlign="center">First Name</Text>
+                         <Box {...labelContentStyle}>
+                            <Text fontSize="lg" textAlign="center">{profileData.firstName}</Text>
                         </Box>
+                        </Flex> */}
+                        <DataDisplayItem label="First Name">
+                            {profileData.firstName}
+                        </DataDisplayItem>
+
+                        <Box
+                        position="absolute"
+                        bottom="90px"
+                        right="290px"  
+                        zIndex="1" // Ensure it's above other content if overlapping
+                            // Using dangerouslySetInnerHTML with plain HTML style string
+                            dangerouslySetInnerHTML={{
+                            __html: `
+                            <lord-icon
+                            src="https://cdn.lordicon.com/cniwvohj.json"
+                            trigger="hover"
+                            colors="primary:#66a1ee,secondary:#242424"
+                            style="width:300px;height:250px">
+                            </lord-icon>
+                            `,
+                            }}
+                        />
+
+                    {/* </GridItem> */}
+
+                    {/* <GridItem>
+                        <Flex direction="column" align="center" justify="center">
+                        <Text {...labelStyle} textAlign="center">Last Name</Text>
+                          <Box {...labelContentStyle}>
+                             <Text fontSize="lg" textAlign="center">{profileData.lastName}</Text>
+                        </Box>
+                     </Flex>
                     </GridItem>
 
                     <GridItem>
-
-                        <Text {...labelStyle}>Last Name: </Text>
-                         <Box 
-                           width = "50%"
-                            border="1px" 
-                            borderRadius="md" 
-                            p={2}
-                            background="blue.500"
-                            textColor="white"
-                            fontWeight="bold"
-                        >
-                             <Text fontSize="lg">{profileData.lastName}</Text>
+                        <Flex direction="column" align="center" justify="center">
+                        <Text {...labelStyle} textAlign="center">Email</Text>
+                         <Box {...labelContentStyle}>
+                             <Text fontSize="lg" textAlign="center">{profileData.email}</Text>
                         </Box>
-                     
+                        </Flex>
                     </GridItem>
 
                     <GridItem>
-                        <Text {...labelStyle}>Email: </Text>
-                        <Box 
-                           width = "50%"
-                            border="1px" 
-                            borderRadius="md" 
-                            p={2}
-                            background="blue.500"
-                            textColor="white"
-                            fontWeight="bold"
-                        >
-                             <Text fontSize="lg">{profileData.email}</Text>
+                        <Flex direction="column" align="center" justify="center">
+                        <Text {...labelStyle} textAlign="center">Username</Text>
+                         <Box {...labelContentStyle}>
+                             <Text fontSize="lg" textAlign="center">{profileData.username}</Text>
                         </Box>
-                        
+                        </Flex>
                     </GridItem>
 
                     <GridItem>
-                        <Text {...labelStyle}>Username: </Text>
-                        <Box 
-                           width = "50%"
-                            border="1px" 
-                            borderRadius="md" 
-                            p={2}
-                            background="blue.500"
-                            textColor="white"
-                            fontWeight="bold"
-                        >
-                             <Text fontSize="lg">{profileData.username}</Text>
+                         <Flex direction="column" align="center" justify="center">
+                        <Text {...labelStyle } textAlign="center">Date of Joining</Text>
+                            <Box {...labelContentStyle}>
+                             <Text fontSize="lg" textAlign="center">{new Date(profileData.dateOfJoining).toLocaleDateString()}</Text>
                         </Box>
-                    </GridItem>
+                        </Flex>
+                    </GridItem> */}
+                    <DataDisplayItem label="Last Name">
+                        {profileData.lastName}
+                    </DataDisplayItem>
 
-                    <GridItem>
-                        <Text {...labelStyle }>Date of Joining </Text>
-                            <Box 
-                           width = "50%"
-                            border="1px" 
-                            borderRadius="md" 
-                            p={2}
-                            background="blue.500"
-                            textColor="white"
-                            fontWeight="bold"
-                            >
-                             <Text fontSize="lg">{new Date(profileData.dateOfJoining).toLocaleDateString()}</Text>
-                        </Box>
-                        
-                    </GridItem>
+                    <DataDisplayItem label="Email">
+                        {profileData.email}
+                    </DataDisplayItem>
+
+                    <DataDisplayItem label="Username">
+                        {profileData.username}
+                    </DataDisplayItem>
+
+                    <DataDisplayItem label="Date of Joining">
+                        {new Date(profileData.dateOfJoining).toLocaleDateString()}
+                    </DataDisplayItem>
                 </Grid>
             </Box>
         );
@@ -237,7 +294,7 @@ const renderActiveProfileSection = () => {
                             }
                         </Text>
                     <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                    <GridItem>
+                    {/* <GridItem>
                         <Text fontWeight="bold">Availability:</Text>
                         <Text>{app.availability}</Text>
                     </GridItem>
@@ -262,6 +319,40 @@ const renderActiveProfileSection = () => {
                                 <Text key={idx}>- {role}</Text>
                                 ))}
                         </Box>
+                    </GridItem> */}
+                     <DataDisplayItem label="Availability">
+                        {app.availability}
+                    </DataDisplayItem>
+
+                    <DataDisplayItem label="Submitted">
+                        {new Date(app.timestamp).toLocaleString()}
+                    </DataDisplayItem>
+
+                    <GridItem colSpan={2}>
+                        <DataDisplayItem label="Courses Applied">
+                            {app.courses.length > 0 ? (
+                                <Box pl={4}>
+                                    {app.courses.map((course, idx) => (
+                                        <Text key={idx}>- {course.courseCode} {course.courseName}</Text>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <Text>No courses applied.</Text>
+                            )}
+                        </DataDisplayItem>
+                    </GridItem>
+                    <GridItem colSpan={2}>
+                        <DataDisplayItem label="Previous Roles">
+                            {app.previousRoles.length > 0 ? (
+                                <Box pl={4}>
+                                    {app.previousRoles.map((role, idx) => (
+                                        <Text key={idx}>- {role}</Text>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <Text>No previous roles.</Text>
+                            )}
+                        </DataDisplayItem>
                     </GridItem>
                 </Grid>
             </Box>
@@ -285,7 +376,7 @@ const renderActiveProfileSection = () => {
                         
                         <Grid templateColumns="repeat(2, 1fr)" gap={4}>
                             <GridItem colSpan={2}>
-                                <Text fontWeight="bold">Academic Credentials:</Text>
+                                {/* <Text fontWeight="bold">Academic Credentials:</Text>
                                 <Box pl={4}>
                                     {app.academicCredentials?.length ? (
                                         app.academicCredentials.map((cred, index) => (
@@ -300,7 +391,25 @@ const renderActiveProfileSection = () => {
                     </GridItem>
                     <GridItem colSpan={2}>
                         <Text fontWeight="bold">Skills:</Text>
-                        <Text>{app.skills?.map((s) => s.skillName).join(", ") || "No Skills Submitted"}</Text>
+                        <Text>{app.skills?.map((s) => s.skillName).join(", ") || "No Skills Submitted"}</Text> */}
+                         <DataDisplayItem label="Academic Credentials">
+                                    {app.academicCredentials?.length ? (
+                                        <Box pl={4}>
+                                            {app.academicCredentials.map((cred, index) => (
+                                            <Text key={index}>
+                                                - {cred.qualification} from {cred.institution} ({cred.year})
+                                            </Text>
+                                            ))}
+                                        </Box>
+                                    ) : (
+                                        <Text>No Credentials Submitted</Text>
+                                    )}
+                                </DataDisplayItem>
+                            </GridItem>
+                            <GridItem colSpan={2}>
+                                <DataDisplayItem label="Skills">
+                                    <Text>{app.skills?.map((s) => s.skillName).join(", ") || "No Skills Submitted"}</Text>
+                                </DataDisplayItem>
                         </GridItem>
                         </Grid>
                         </Box>
@@ -316,6 +425,12 @@ const renderActiveProfileSection = () => {
 
 return(
     <>
+
+    <Head>
+        {/* LordIcon library for animated icons */}
+        <script src="https://cdn.lordicon.com/lordicon.js" async defer></script>
+    </Head>
+
     <Header />   
 
     {/*Background Container */}
@@ -337,6 +452,8 @@ return(
      borderRadius="md"
      boxShadow="md"
      p={8}
+     mt={3}
+     position="relative"
      >
         <Text fontSize="3xl" fontWeight="bold" color="blue.700" mb={6} align="center">
             Your Profile
@@ -347,7 +464,8 @@ return(
 
 
         {renderActiveProfileSection()}
-    </Box>
+
+        </Box>
 
     </MotionBox>
     <Footer />

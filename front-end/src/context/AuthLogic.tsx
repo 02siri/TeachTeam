@@ -66,6 +66,7 @@ export function AuthProvider(
         sessionStorage.removeItem("CurrentUserEmail");
         sessionStorage.removeItem("CurrentUsername");
         setCurrentUserEmail(null);
+        setCurrentUsername(null);
         router.push("/login");
     };
 

@@ -132,10 +132,13 @@ export default function LoginPage(){
             }));
             hasErrors = true;
         }
-    
+        
+        if(hasErrors) return;
+
+         setIsSubmitting(true);
         // If no validation errors, attempt login
-        if(!hasErrors){
-        setIsSubmitting(true);
+        try{
+       
         const success = await login({email: formData.email, password: formData.password});
 
         if(success){
@@ -157,6 +160,17 @@ export default function LoginPage(){
                     password: "Invalid email or password.",
                 }));
             }
+        }catch(err){
+            console.error("Login Error: ", err);
+            toast({
+                title: "Login Failure",
+                description : "Please try again",
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            });
+        } finally{
+            setIsSubmitting(false);
         }
     };
 
