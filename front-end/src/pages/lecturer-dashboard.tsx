@@ -808,7 +808,7 @@ const handleSubmit = async () => {
                       ))}
                     </VStack>
                     </Td>
-                    <Td textAlign="center">{capitalizeWords(applicant.skills.join(", "))}</Td>
+                    <Td textAlign="center">{capitalizeWords(applicant.skills.map(skill=>skill.skillName).join(", "))}</Td>
                     <Td textAlign="center">{capitalizeWords(applicant.availability)}</Td>
                     <Td textAlign="center">{applicant.previousRoles?.map(role => capitalizeWords(role)).join(", ") || "No previous roles"}</Td>
                   </Tr>
