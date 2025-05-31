@@ -87,33 +87,34 @@ const Home = () => {
       const applications: Tutor[] = await tutorApi.getAllApplications();
       setTotalApplications(applications.length);
 
-      const coursesMap: { [key: string]: { id: string; name: string; count: number } } = {};
-      const skillsMap: { [key: string]: number } = {};
-      const rolesMap = { Tutor: 0, "Lab Assistant": 0 };
-      const availabilityMap = { "Part-Time": 0, "Full-Time": 0 };
+      const coursesMap: Record<string, { id: string; name: string; count: number }> = {};
+      const skillsMap: Record<string, number> = {};
+      const rolesMap: Record<string, number> = { Tutor: 0, "Lab Assistant": 0 };
+      const availabilityMap: Record<string, number> = { "Part-Time": 0, "Full-Time": 0 };
 
       applications.forEach((app) => {
         app.courses.forEach((course) => {
-          if (!coursesMap[course.courseID]) {
-            coursesMap[course.courseID] = {
-              id: course.courseID.toString(),
-              name: course.courseCode,
+          const key = course.courseCode;
+          if (!coursesMap[key]) {
+            coursesMap[key] = {
+              id: key,
+              name: key,
               count: 1,
             };
           } else {
-            coursesMap[course.courseID].count += 1;
+            coursesMap[key].count += 1;
           }
         });
 
-        app.user?.skills.forEach((skill) => {
+        (app.skills ?? []).forEach((skill) => {
           skillsMap[skill.skillName] = (skillsMap[skill.skillName] || 0) + 1;
         });
 
-        if (app.sessionType === "tutor") rolesMap["Tutor"]++;
-        else if (app.sessionType === "lab") rolesMap["Lab Assistant"]++;
+        const roleLabel = app.sessionType === "tutor" ? "Tutor" : "Lab Assistant";
+        rolesMap[roleLabel] = (rolesMap[roleLabel] || 0) + 1;
 
         if (["Part-Time", "Full-Time"].includes(app.availability)) {
-          availabilityMap[app.availability as "Part-Time" | "Full-Time"]++;
+          availabilityMap[app.availability] += 1;
         }
       });
 
