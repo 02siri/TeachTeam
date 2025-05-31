@@ -156,7 +156,7 @@ export class ApplicationController {
   static async updateApplicationByLecturer(req:Request, res:Response){
     try{
       const {applicationId} = req.params;
-      const {rank, comments, selectedCourseId, status, isSelected} = req.body
+      const {rank, comments, selectedCourseIds, status, isSelected} = req.body
 
       const appRepo = AppDataSource.getRepository(Application);
       const courseRepo = AppDataSource.getRepository(Course);
@@ -172,9 +172,42 @@ export class ApplicationController {
         })
       }
 
+      //Input validations
+      if(rank!==undefined && (typeof rank !=="number" || rank < 0)){
+        return res.status(400).json({
+          error: "Rank must be a non-negative number"
+        });
+      }
+
+      if(comments!==undefined && typeof rank !=="string" ){
+        return res.status(400).json({
+          error: "Comments must be a string"
+        });
+      }
+
+      if(selectedCourseIds !==undefined){
+        if(!Array.isArray(selectedCourseIds)){
+          return res.status(400).json({
+          error: "selectedCourseID must be an array of numbers."
+        });
+        }
+      }
+
       //updating lecturer-specific fields
       if(rank!==undefined){
         application.rank = rank;
+      }
+
+      if(rank !==undefined && rank !=null){
+        const applicationsWithSameRank = await appRepo.find({
+          where : {rank : rank},
+        })
+
+        if(applicationsWithSameRank.length > 0 && applicationsWithSameRank.some(app=> app.applicationId !== application.applicationId)){
+           return res.status(400).json({
+          error: `Rank ${rank} is already assigned to another applicant. Please chooose a unique rank.`
+        });
+        }
       }
 
       if(comments!==undefined){
@@ -186,15 +219,15 @@ export class ApplicationController {
        }
 
        //handle selected courses
-       if(selectedCourseId &&  Array.isArray(selectedCourseId)){
+       if(selectedCourseIds &&  Array.isArray(selectedCourseIds)){
         const coursesToSelect = await courseRepo.find({
-          where: {courseID :In(selectedCourseId)}
+          where: {courseID :In(selectedCourseIds)}
         })
 
         application.selectedCourses = coursesToSelect;
         application.isSelected = true;
        
-       } else if(selectedCourseId === null || selectedCourseId === undefined){
+       } else if(selectedCourseIds === null || selectedCourseIds === undefined){
         application.selectedCourses = [];
         application.isSelected = false;
        }
