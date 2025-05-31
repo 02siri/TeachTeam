@@ -3,10 +3,12 @@ import { AppDataSource } from "../data-source";
 import { Application } from "../entity/Application";
 import { Users } from "../entity/Users";
 import { Course } from "../entity/Course";
-import { In } from "typeorm";
+import { Any, In, Like } from "typeorm";
 import { Skills } from "../entity/Skills";
 import { AcademicCredential } from "../entity/AcademicCredential";
 import { normalizeSkills } from "../services/skillService";
+import session from "express-session";
+import { Subject } from "typeorm/persistence/Subject";
 
 export class ApplicationController {
   static async createApplication(req: Request, res: Response) {
@@ -69,7 +71,7 @@ export class ApplicationController {
     }
     savedApplication.skills = skillEntitiesForApplication;
 
-    //so here i changed relation fr academic credentials to ManyToMany
+    //so here i changed relation for academic credentials to ManyToMany
     const academicCredentialEntitiesForApplication: AcademicCredential[] = [];
 
     if (Array.isArray(applicationCredentials)) {
@@ -153,6 +155,70 @@ export class ApplicationController {
     }
   }
   
+  static async getFilteredApplications(req: Request, res: Response) {
+    try {
+      const appRepo = AppDataSource.getRepository(Application);
+      const { candidateName, sessionType, availability, skills } = req.query;
+
+      const queryBuilder = appRepo.createQueryBuilder("application")
+        .leftJoinAndSelect("application.user", "user")
+        .leftJoinAndSelect("application.skills", "skills")
+        .leftJoinAndSelect("application.academicCredentials", "academicCredentials")
+        .leftJoinAndSelect("application.courses", "courses")
+        .leftJoinAndSelect("application.selectedCourses", "selectedCourses")
+        .orderBy("application.timestamp", "DESC");
+
+      // Apply Candidate Name filter
+      if (candidateName && typeof candidateName === 'string') {
+        const names = candidateName.split(',').map(name => name.trim().toLowerCase());
+        const nameConditions = names.map(name => 
+          `(LOWER(user.firstName) LIKE :firstName_${name.replace(/[^a-zA-Z0-9]/g, '')} OR LOWER(user.lastName) LIKE :lastName_${name.replace(/[^a-zA-Z0-9]/g, '')})`
+        );
+        if (nameConditions.length > 0) {
+          queryBuilder.andWhere(`(${nameConditions.join(' OR ')})`, names.reduce((acc: Record<string, string>, name) => {
+            acc[`firstName_${name.replace(/[^a-zA-Z0-9]/g, '')}`] = `%${name}%`;
+            acc[`lastName_${name.replace(/[^a-zA-Z0-9]/g, '')}`] = `%${name}%`;
+            return acc;
+          }, {}));
+        }
+      }
+
+      // Apply Session Type filter
+      if (sessionType && typeof sessionType === 'string') {
+        const sessionTypes = sessionType.split(',').map(type => type.trim().toLowerCase());
+        if (sessionTypes.length > 0) {
+          queryBuilder.andWhere("application.sessionType IN (:...sessionTypes)", { sessionTypes });
+        }
+      }
+
+      // Apply Availability filter
+      if (availability && typeof availability === 'string') {
+        const availabilities = availability.split(',').map(avail => avail.trim().toLowerCase());
+        if (availabilities.length > 0) {
+          queryBuilder.andWhere("application.availability IN (:...availabilities)", { availabilities });
+        }
+      }
+
+      // Apply Skills filter
+      if (skills && typeof skills === 'string') {
+        const skillNames = skills.split(',').map(skill => skill.trim().toLowerCase());
+        const skillConditions = skillNames.map(skill => `LOWER(skills.skillName) LIKE :skill_${skill.replace(/[^a-zA-Z0-9]/g, '')}`);
+        if (skillConditions.length > 0) {
+          queryBuilder.andWhere(`(${skillConditions.join(' OR ')})`, skillNames.reduce((acc: Record<string, string>, skill) => {
+            acc[`skill_${skill.replace(/[^a-zA-Z0-9]/g, '')}`] = `%${skill}%`;
+            return acc;
+          }, {}));
+        }
+      }
+
+      const applications = await queryBuilder.getMany();
+      return res.status(200).json(applications);
+    } catch (err: any) {
+      console.error("Error fetching filtered applications:", err.message);
+      return res.status(500).json({ error: "Failed to fetch filtered applications", detail: err.message });
+    }
+  }
+
   static async updateApplicationByLecturer(req:Request, res:Response){
     try{
       const {applicationId} = req.params;
