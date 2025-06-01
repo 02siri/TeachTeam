@@ -51,6 +51,16 @@ export const tutorApi = {
       const res = await api.get("/applications");
       return res.data;
     }, 
+    getFilteredApplications: async (params:{
+      candidateName ?: string;
+      sessionType ?:string;
+      availability ?:string;
+      skills ?: string;
+      generalSearch?: string;
+    }): Promise<Tutor[]> => {
+        const res = await api.get("/applications/filtered", {params});
+        return res.data;
+    },
     getApplicationByEmail: async (email: string): Promise<Tutor[]> => {
       const res = await api.get(`/applications/${email}`);
       return res.data;
@@ -83,7 +93,7 @@ export const tutorApi = {
       const {selectedCourseIDs, ...rest} = updateData;
       const res = await api.post(`/applications/${applicationId}`, {
         ...rest,
-        selectedCourseId : selectedCourseIDs,
+        selectedCourseIds : selectedCourseIDs,
       });
       return res.data;
     },

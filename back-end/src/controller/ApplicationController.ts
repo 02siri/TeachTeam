@@ -158,7 +158,7 @@ export class ApplicationController {
   static async getFilteredApplications(req: Request, res: Response) {
     try {
       const appRepo = AppDataSource.getRepository(Application);
-      const { candidateName, sessionType, availability, skills } = req.query;
+      const { candidateName, sessionType, availability, skills, generalSearch} = req.query;
 
       const queryBuilder = appRepo.createQueryBuilder("application")
         .leftJoinAndSelect("application.user", "user")
@@ -168,48 +168,71 @@ export class ApplicationController {
         .leftJoinAndSelect("application.selectedCourses", "selectedCourses")
         .orderBy("application.timestamp", "DESC");
 
-      // Apply Candidate Name filter
+      //Apply general search - searches accross candidate name, avaialability, skills and courses
+      if (generalSearch && typeof generalSearch === 'string') {
+      const searchTerm = generalSearch.trim().toLowerCase();
+      queryBuilder.andWhere(`(
+        LOWER(user.firstName) LIKE :generalSearch OR 
+        LOWER(user.lastName) LIKE :generalSearch OR 
+        LOWER(CONCAT(user.firstName, ' ', user.lastName)) LIKE :generalSearch OR
+        LOWER(application.availability) LIKE :generalSearch OR
+        LOWER(skills.skillName) LIKE :generalSearch OR
+        LOWER(courses.courseCode) LIKE :generalSearch OR
+        LOWER(courses.courseName) LIKE :generalSearch OR
+        LOWER(CONCAT(courses.courseCode, ' ', courses.courseName)) LIKE :generalSearch
+      )`, { generalSearch: `%${searchTerm}%` });
+    }
+      // Apply Candidate Name checkbox filter
       if (candidateName && typeof candidateName === 'string') {
         const names = candidateName.split(',').map(name => name.trim().toLowerCase());
-        const nameConditions = names.map(name => 
-          `(LOWER(user.firstName) LIKE :firstName_${name.replace(/[^a-zA-Z0-9]/g, '')} OR LOWER(user.lastName) LIKE :lastName_${name.replace(/[^a-zA-Z0-9]/g, '')})`
-        );
-        if (nameConditions.length > 0) {
-          queryBuilder.andWhere(`(${nameConditions.join(' OR ')})`, names.reduce((acc: Record<string, string>, name) => {
-            acc[`firstName_${name.replace(/[^a-zA-Z0-9]/g, '')}`] = `%${name}%`;
-            acc[`lastName_${name.replace(/[^a-zA-Z0-9]/g, '')}`] = `%${name}%`;
-            return acc;
-          }, {}));
+       const nameConditions = names.map((name, index) =>
+        `(LOWER(user.firstName) LIKE :firstName_${index} OR LOWER(user.lastName) LIKE :lastName_${index} OR LOWER(CONCAT(user.firstName, ' ', user.lastName)) LIKE :fullName_${index})`
+      );
+
+       if (nameConditions.length > 0) {
+        const nameParams: Record<string, string> = {};
+        names.forEach((name, index) => {
+          nameParams[`firstName_${index}`] = `%${name}%`;
+          nameParams[`lastName_${index}`] = `%${name}%`;
+          nameParams[`fullName_${index}`] = `%${name}%`;
+        });
+        
+        queryBuilder.andWhere(`(${nameConditions.join(' OR ')})`, nameParams);
+
         }
       }
 
-      // Apply Session Type filter
+      // Apply Session Type checkbox filter
       if (sessionType && typeof sessionType === 'string') {
         const sessionTypes = sessionType.split(',').map(type => type.trim().toLowerCase());
         if (sessionTypes.length > 0) {
-          queryBuilder.andWhere("application.sessionType IN (:...sessionTypes)", { sessionTypes });
+          queryBuilder.andWhere("LOWER(application.sessionType) IN (:...sessionTypes)", { sessionTypes });
         }
       }
 
-      // Apply Availability filter
+      // Apply Availability checkbox filter
       if (availability && typeof availability === 'string') {
         const availabilities = availability.split(',').map(avail => avail.trim().toLowerCase());
         if (availabilities.length > 0) {
-          queryBuilder.andWhere("application.availability IN (:...availabilities)", { availabilities });
+          queryBuilder.andWhere("LOWER(application.availability) IN (:...availabilities)", { availabilities });
         }
       }
 
-      // Apply Skills filter
-      if (skills && typeof skills === 'string') {
-        const skillNames = skills.split(',').map(skill => skill.trim().toLowerCase());
-        const skillConditions = skillNames.map(skill => `LOWER(skills.skillName) LIKE :skill_${skill.replace(/[^a-zA-Z0-9]/g, '')}`);
-        if (skillConditions.length > 0) {
-          queryBuilder.andWhere(`(${skillConditions.join(' OR ')})`, skillNames.reduce((acc: Record<string, string>, skill) => {
-            acc[`skill_${skill.replace(/[^a-zA-Z0-9]/g, '')}`] = `%${skill}%`;
-            return acc;
-          }, {}));
+      // Apply Skills checkbox filter
+    if (skills && typeof skills === 'string') {
+        const skillNames = skills.split(',').map(name => name.trim().toLowerCase());
+        if (skillNames.length > 0) {
+            queryBuilder.andWhere(qb => {
+                const subQuery = qb.subQuery()
+                    .select("joinedSkill.skillId") // Select a column from the joined skills table
+                    .from(Application, "app_alias") // Alias the outer application table to correlate
+                    .innerJoin("app_alias.skills", "joinedSkill") // Join through the relation on the alias
+                    .where("app_alias.applicationId = application.applicationId") // Correlate with the main query's application
+                    .andWhere("LOWER(joinedSkill.skillName) IN (:...skillNames)", { skillNames: skillNames });
+                return "EXISTS " + subQuery.getQuery();
+            }, { skillNames: skillNames }); // Parameters for the subquery
         }
-      }
+    }
 
       const applications = await queryBuilder.getMany();
       return res.status(200).json(applications);
@@ -307,7 +330,7 @@ export class ApplicationController {
     }
   catch(error){
     return res.status(500).json({
-        message: "Error fetching user by email : ", error
+        message: "Error updating applications: ", error
       })
   }
 }

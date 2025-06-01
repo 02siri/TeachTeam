@@ -21,6 +21,11 @@ import {
   Td,
   TableContainer,
   useToast,
+  Accordion,
+  AccordionIcon,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
 } from "@chakra-ui/react";
 
 import {tutorApi, Tutor} from "../services/api";
@@ -57,15 +62,19 @@ const LecturerDashboard = () => {
 
   // Main state management
   const [applicants, setApplicants] = useState<DisplayApplicant[]>([]); // All applicants in the system
+  const [filteredApplicants, setFilteredApplicants] = useState<DisplayApplicant[]>([]);
  const [rankErrors, setRankErrors] = useState<{ [key: string]: string }>({}); // Error messages for invalid rankings
   const [inputErrors, setInputErrors] = useState<{ name?: string }>({}); // Validation errors for input fields
   
+  // 
   // Filter and sort state
   const [filter, setFilter] = useState({
-    course: "",
-    availability: "",
-    skill: "",
-    name: "",
+    generalSearch: "",
+    //For checkbox filters:
+    sessionType: [] as string[],
+    candidateName: [] as string[],
+    availability: [] as string[],
+    skills: [] as string[],
   });
   const [sortedBy, setSortedBy] = useState<string | null>(null); // Current sort parameter
   
@@ -97,11 +106,9 @@ const LecturerDashboard = () => {
    * function memoized with useCallback to prevent unecessary re-creations.
    */
   
-  const fetchApplicants = useCallback(async() => {
+  const fetchAllApplications = useCallback(async() => {
       try{
-        
-        const applications = await tutorApi.getAllApplications(); //fetches all applications
-
+        const applications = await tutorApi.getAllApplications();
         const formattedApplications : DisplayApplicant[] =applications.map((app: Tutor) => {
           const name = app.user ? `${app.user.firstName} ${app.user.lastName}` : "N/A";
           const academicCred = app.user ? formatAcadCred(app.academicCredentials) : "No Academic Credentials";
@@ -115,6 +122,7 @@ const LecturerDashboard = () => {
         });
 
         setApplicants(formattedApplications);
+        setFilteredApplicants(formattedApplications);
 
         //initialize/restore selection, rank and comments from fetched data
         const initialSelected : {[id:number] : boolean} = {};
@@ -161,25 +169,96 @@ const LecturerDashboard = () => {
       }
     } , [toast]);
 
+  const applyFilters = useCallback(async()=>{
+    try{
+      setLoading(true);
+      const params:{
+          candidateName ?: string;
+          sessionType ?: string;
+          availability ?: string;
+          skills ?: string;
+          generalSearch?:string;
+        } = {};
+
+        //Map general search to all relavant backend filter fields
+        if(filter.generalSearch && filter.generalSearch.trim()){
+         params.generalSearch = filter.generalSearch.trim();
+        }
+
+        //Specific checkbox filters if selected
+        if(filter.candidateName.length>0){
+          params.candidateName = filter.candidateName.join(",");
+        }
+        if(filter.sessionType.length>0){
+          params.sessionType = filter.sessionType.join(",");
+        }
+        if(filter.availability.length>0){
+          params.availability = filter.availability.join(",");
+        }
+        if(filter.skills.length>0){
+          params.skills = filter.skills.join(",");
+        }
+
+        const applications = await tutorApi.getFilteredApplications(params);
+
+        const formattedApplications : DisplayApplicant[] =applications.map((app: Tutor) => {
+          const name = app.user ? `${app.user.firstName} ${app.user.lastName}` : "N/A";
+          const academicCred = app.user ? formatAcadCred(app.academicCredentials) : "No Academic Credentials";
+
+          return{
+            ...app,
+            name,
+            academicCred,
+            formattedCourses : formatCourseforDisplay(app.courses),
+          };
+        });
+
+        setFilteredApplicants(formattedApplications);
+    }catch(error){
+      console.error("Failed to apply filters", error);
+      toast({
+        title: "Fitler Error",
+        description: "Failed to apply filters",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      })
+    }finally{
+      setLoading(false);
+    }
+  },[filter, toast])
+
+const clearFilters = useCallback(()=>{
+  setFilter({
+    generalSearch: "",
+    sessionType: [],
+    candidateName: [],
+    availability: [],
+    skills: []
+  });
+  fetchAllApplications();
+  setInputErrors({});
+},[fetchAllApplications]);
+
 //load applicant data on component mount
   useEffect (()=> {
-    fetchApplicants();
-  },[fetchApplicants]);
+    fetchAllApplications();
+  },[fetchAllApplications]);
   
   /**
-   * Handles changes to filter input fields
+   * Handles changes to filter input fields : general search 
    * Validates input and updates filter state
    */
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const isValid = /^[A-Za-z\s]*$/.test(value); // Regex to allow only letters and spaces
+    const isValid = /^[A-Za-z0-9\s]*$/.test(value); // Regex to allow only letters and spaces
 
     // Validate filter inputs to prevent injection or invalid searches
-    if (name === "name" || name === "course" || name === "availability" || name === "skill") {
+    if (name === "generalSearch") {
       if (!isValid) {
         setInputErrors((prev) => ({
           ...prev,
-          name: "Only letters and spaces are allowed.",
+          name: "Only letters, numbers and spaces are allowed.",
         }));
         return;
       } else {
@@ -194,51 +273,85 @@ const LecturerDashboard = () => {
 
     // Update filter state with new value
     setFilter({
-        ...filter, [e.target.name]: e.target.value
+        ...filter, [name]: value
     });
+ };
+
+ /** Handles changes to filter input fieldsand checkbox filters) **/
+ const handleCheckboxFilterChange =(category: keyof typeof filter, value: string, checked: boolean) =>{
+  setFilter((prev)=>{
+    const currentValues = prev[category] as string[];
+    if(checked){
+      return{
+        ...prev,
+        [category] : [...currentValues, value],
+      };
+    }else{
+      return{
+        ...prev,
+        [category] : currentValues.filter((item)=>item!==value),
+      };
+    }
+  });
  };
 
   /**
    * Applies current filters to the applicant list
-   * Filters by name, course, availability, and skills
+   * Filters by general search and checkbox filters
    * Case-insensitive partial matching for all fields
-   */
+ 
   const filteredApplicants = applicants.filter((applicant) => {
-    const matchesCourse = !filter.course || applicant.formattedCourses.some((course) => course.toLowerCase().includes(filter.course.toLowerCase()));
-    const matchesName = !filter.name || applicant.name.toLowerCase().includes(filter.name.toLowerCase());
-    const matchesAvailability = !filter.availability || applicant.availability.toLowerCase().includes(filter.availability.toLowerCase());
-    const matchesSkill = !filter.skill || applicant.skills.some((skill)=>skill.skillName.toLowerCase().includes(filter.skill.toLowerCase()));
+    const generalSearchTerm = filter.generalSearch.toLowerCase();
+    const matchesGeneralSearch = 
+    !generalSearchTerm ||
+    applicant.name.toLowerCase().includes(generalSearchTerm) ||
+    applicant.formattedCourses.some((course)=>course.toLowerCase().includes(generalSearchTerm)) ||
+    applicant.availability.toLowerCase().includes(generalSearchTerm);
+    applicant.skills.some((skill)=> skill.skillName.toLowerCase().includes(generalSearchTerm));
+ 
+    const matchesCandidateName = 
+    filter.candidateName.length === 0 ||
+    filter.candidateName.some((namePart)=>applicant.name.toLowerCase().includes(namePart.toLowerCase()));
+
+    const matchesSessionType = 
+    filter.sessionType.length === 0 ||
+    filter.sessionType.some((session)=>applicant.sessionType.toLowerCase().includes(session.toLowerCase()));
+
+    const matchesAvailability = 
+    filter.availability.length === 0 ||
+    filter.availability.some((avail)=>applicant.availability.toLowerCase().includes(avail.toLowerCase()));
+
+    const matchesSkills = 
+    filter.skills.length === 0 ||
+    filter.skills.some((skillPart)=>applicant.skills.some((skill) => skill.skillName.toLowerCase().includes(skillPart.toLowerCase())));
 
     // An applicant must match ALL active filters
     return (
-     matchesCourse && 
-     matchesName && 
+     matchesGeneralSearch && 
+     matchesCandidateName && 
+     matchesSessionType &&
      matchesAvailability && 
-     matchesSkill
+     matchesSkills
     );
+    // const matchesCourse = !filter.course || applicant.formattedCourses.some((course) => course.toLowerCase().includes(filter.course.toLowerCase()));
+    // const matchesName = !filter.name || applicant.name.toLowerCase().includes(filter.name.toLowerCase());
+    // const matchesAvailability = !filter.availability || applicant.availability.toLowerCase().includes(filter.availability.toLowerCase());
+    // const matchesSkill = !filter.skill || applicant.skills.some((skill)=>skill.skillName.toLowerCase().includes(filter.skill.toLowerCase()));
+
+    // // An applicant must match ALL active filters
+    // return (
+    //  matchesCourse && 
+    //  matchesName && 
+    //  matchesAvailability && 
+    //  matchesSkill
+    // );
   });
+  */
 
   /**
    * Sorts the filtered applicants based on selected sort criteria
    * Currently supports sorting by course name or availability
    */
-  const sortedApplicants = [...filteredApplicants].sort((a, b) => {
-    if (sortedBy === "course") {
-      // Sort by first course name alpahbetically from formatted courses
-      const aCourseName = a.formattedCourses[0] || "";
-      const bCourseName = b.formattedCourses[0] || "";
-      return aCourseName.localeCompare(bCourseName);
-    } else if (sortedBy === "availability") {
-      // For availability sorting, we do secondary sort by name
-      const availabilityComparison = a.availability.localeCompare(b.availability);
-
-      if(availabilityComparison!==0){
-        return availabilityComparison;
-      }
-      return a.name.localeCompare(b.name);
-    }
-    return 0; // No sorting
-  });
   
   /**
    * Toggles selection state for an applicant
@@ -408,62 +521,13 @@ const handleSubmit = async () => {
     }finally{
       setLoading(false);
     }
-  // // Get previously submitted data from local storage
-  // const existingDataString = localStorage.getItem("selectedApplicants");
-  // const existingData: Applicant[] = existingDataString ? JSON.parse(existingDataString) : [];
-
-  // // Prepare new selected data with all details (courses, ranks, comments)
-  // const selectedData = selectedApplicants.map((applicant) => ({
-  //   ...applicant,
-  //   selectedCourses: courseSelections[applicant.name] || [],
-  //   rank: rankedApplicants.find((r) => r.name === applicant.name)?.rank,
-  //   comments: comments[applicant.name],
-  // }));
-
-  // // Create an object to track ranks and detect duplicates
-  // const rankTracker: { [key: string]: boolean } = {}; // Tracks whether a rank is already assigned
-  // const newRankErrors: { [key: string]: string } = {}; // Temporary object to store errors
-
-  // // Check if any rank is duplicated only when rank is filled
-  // selectedData.forEach((applicant) => {
-  //   const rank = applicant.rank;
-  //   if (rank) {
-  //     if (rankTracker[rank]) {
-  //       // If rank is already assigned, add error for this rank
-  //       newRankErrors[applicant.name] = `Rank ${rank} is already assigned to another applicant. Please choose a unique rank.`;
-  //     } else {
-  //       rankTracker[rank] = true;
-  //     }
-  //   }
-  // });
-
-  // // If there are errors, prevent submission
-  // if (Object.keys(newRankErrors).length > 0) {
-  //   setRankErrors(newRankErrors); // Set error messages
-  //   return; // Stop submission
-  // }
-
-  // // Merge & de-duplicate by name (update existing data)
-  // const mergedData = selectedData.reduce((acc, newApplicant) => {
-  //   const existingIndex = acc.findIndex((existing) => existing.name === newApplicant.name);
-  //   if (existingIndex > -1) {
-  //     // Update the existing applicant's data
-  //     acc[existingIndex] = { ...acc[existingIndex], ...newApplicant };
-  //   } else {
-  //     // Add the new applicant
-  //     acc.push(newApplicant);
-  //   }
-  //   return acc;
-  // }, existingData);
-
-  // // Save merged data to local storage
-  // localStorage.setItem("selectedApplicants", JSON.stringify(mergedData));
-
-  // // Save submitted data to state and switch to submitted view
-  // setSubmittedData(mergedData);
-  // setView("submitted");
-};
-
+  };
+ 
+  //Extract unique values for filter categories from all applicants
+  const uniqueCandidateNames = Array.from(new  Set(applicants.map((app)=> app.name))).sort();
+  const uniqueSessionTypes = Array.from(new  Set(applicants.map((app)=> app.sessionType))).sort();
+  const uniqueAvailabilities = Array.from(new  Set(applicants.map((app)=> app.availability))).sort();
+  const uniqueSkills = Array.from(new  Set(applicants.flatMap((app)=> app.skills.map((s)=> s.skillName)))).sort();
   return (
     <>
       <Header />
@@ -486,27 +550,14 @@ const handleSubmit = async () => {
   
             {/* Filters Section */}
             <Box bg="white" p={6} rounded="2xl" boxShadow="lg" mb={6}>
-            <HStack spacing={4} mb={4}>
+            <VStack spacing={6} align="stretch">
               
-              {/* Filter by tutor name */}
+              {/* General Search Input */}
               <Input 
-                name="name" 
+                name="generalSearch" 
                 color = "blue.700" 
-                placeholder="Search by Tutor Name" 
-                value={filter.name}
-                onChange={handleFilterChange} 
-                _hover={{
-                  borderColor: "blue.500",
-                  outline: "1px blue",
-                }}
-              />
-              
-              {/* Filter by course name */}
-              <Input 
-                name="course" 
-                color = "blue.700" 
-                placeholder="Search by Course Name" 
-                value={filter.course}
+                placeholder="Search by Tutor Name, Course, Availability or Skills" 
+                value={filter.generalSearch}
                 onChange={handleFilterChange} 
                 _hover={{
                   borderColor: "blue.500",
@@ -514,33 +565,155 @@ const handleSubmit = async () => {
                 }}
               />
 
-              {/* Filter by availability */}
-              <Input 
-                name="availability" 
-                color = "blue.700" 
-                placeholder="Search by Availability" 
-                value={filter.availability}
-                onChange={handleFilterChange} 
-                _hover={{
-                  borderColor: "blue.500",
-                  outline: "1px blue",
-                }}
-              />
+              {/* Display input validation errors */}
+              {inputErrors.name && (
+                <Text color="red.500" fontSize="sm">
+                  {inputErrors.name}
+                </Text>
+              )}
 
-              {/* Filter by skills */}
-              <Input 
-                name="skill" 
-                color = "blue.700" 
-                placeholder="Search by Skills" 
-                value={filter.skill}
-                onChange={handleFilterChange} 
-                _hover={{
-                  borderColor: "blue.500",
-                  outline: "1px blue",
-                }}
-              />
-            </HStack>
-            
+              {error && (
+                <Text color="red.800" fontWeight="semibold">
+                  {error}
+                </Text>
+            )}
+
+              {/**Filter by categories */}
+            <Accordion allowMultiple>
+              <AccordionItem>
+                <h2>
+                  <AccordionButton>
+                    <Box flex="1" textAlign="left" fontWeight="bold">
+                     Apply Filters 
+                    </Box>
+                    <AccordionIcon/>
+                  </AccordionButton>
+                </h2>
+                <AccordionPanel pb={4}>
+                  <VStack spacing={4} align="stretch">
+                       {/**Filter by Candidate Name */}
+                    <Accordion allowMultiple>
+                      <AccordionItem>
+                        <h2>
+                          <AccordionButton>
+                            <Box flex ="1" textAlign="left">
+                              Candidate Name
+                            </Box>
+                            <AccordionIcon />
+                          </AccordionButton>
+                        </h2>
+                      <AccordionPanel pb={4}>
+                        <VStack align="start">
+                          {uniqueCandidateNames.map((name)=>(
+                      <Checkbox
+                      key = {name}
+                      isChecked = {filter.candidateName.includes(name)}
+                      onChange={(e)=> handleCheckboxFilterChange("candidateName", name,e.target.checked)}>
+                        {name}
+                      </Checkbox>
+                    ))}
+                        </VStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+
+                  {/**Filter by SessionType */}
+                  <AccordionItem>
+                    <h2>
+                      <AccordionButton>
+                        <Box flex="1" textAlign="left">
+                          Filter By: Session Type
+                        </Box>
+                        <AccordionIcon/>
+                      </AccordionButton>
+                    </h2>
+                    <AccordionPanel pb={4}>
+                      <VStack align="start">
+                        {uniqueSessionTypes.map((sessionType)=>(
+                          <Checkbox
+                          key = {sessionType}
+                          isChecked = {filter.sessionType.includes(sessionType)}
+                          onChange={(e)=> handleCheckboxFilterChange("sessionType", sessionType,e.target.checked)}>
+                            {capitalizeWords(sessionType)}
+                          </Checkbox>
+                        ))}
+                      </VStack>
+                    </AccordionPanel>
+                  </AccordionItem>
+
+                  {/**Filter by Availability */}
+                  <AccordionItem>
+                    <h2>
+                      <AccordionButton>
+                        <Box flex="1" textAlign="left">
+                          Filter By: Availability
+                        </Box>
+                        <AccordionIcon/>
+                      </AccordionButton>
+                    </h2>
+                    <AccordionPanel pb={4}>
+                      <VStack align="start">
+                        {uniqueAvailabilities.map((availability)=>(
+                          <Checkbox
+                          key = {availability}
+                          isChecked = {filter.availability.includes(availability)}
+                          onChange={(e)=> handleCheckboxFilterChange("availability", availability,e.target.checked)}>
+                            {capitalizeWords(availability)}
+                          </Checkbox>
+                        ))}
+                      </VStack>
+                    </AccordionPanel>
+                  </AccordionItem>
+
+                  {/**Filter by Skills */}
+                  <AccordionItem>
+                    <h2>
+                      <AccordionButton>
+                        <Box flex="1" textAlign="left">
+                          Filter By: Skills
+                        </Box>
+                        <AccordionIcon/>
+                      </AccordionButton>
+                    </h2>
+                    <AccordionPanel pb={4}>
+                      <VStack align="start">
+                        {uniqueSkills.map((skill)=>(
+                          <Checkbox
+                          key = {skill}
+                          isChecked = {filter.skills.includes(skill)}
+                          onChange={(e)=> handleCheckboxFilterChange("skills", skill,e.target.checked)}>
+                            {capitalizeWords(skill)}
+                          </Checkbox>
+                        ))}
+                      </VStack>
+                    </AccordionPanel>
+                  </AccordionItem>
+                  </Accordion>
+
+              {/* Filter Action Buttons */}
+              <HStack spacing={4} pt={4}>
+                <Button 
+                  onClick={applyFilters} 
+                  colorScheme="blue"
+                  isLoading={loading}
+                  loadingText="Filtering..."
+                  sx={{ cursor: "pointer" }}
+                >
+                  Apply Filters
+                </Button>
+                <Button 
+                  onClick={clearFilters} 
+                  variant="outline"
+                  colorScheme="blue"
+                  sx={{ cursor: "pointer" }}
+                >
+                  Clear All Filters
+                </Button>
+              </HStack>
+            </VStack>
+            </AccordionPanel>
+            </AccordionItem>
+            </Accordion>
+                        
             {/* Sort options dropdown */}
             <Select
                 placeholder="Sort by"
@@ -557,19 +730,8 @@ const handleSubmit = async () => {
                 <option value="availability">Sort by Availability (A–Z)</option>
               </Select>
               
-              {/* Display input validation errors */}
-              {inputErrors.name && (
-                <Text color="red.500" fontSize="sm">
-                  {inputErrors.name}
-                </Text>
-              )}
-
-              {error && (
-                <Text color="red.800" fontWeight="semibold">
-                  {error}
-                </Text>
-            )}
-
+              
+            </VStack>
             </Box>
 
             {/* Select Mode Toggle */}
@@ -622,7 +784,23 @@ const handleSubmit = async () => {
               </Thead>
               <Tbody>
                 {/* Map through filtered & sorted applicants to create table rows */}
-                {sortedApplicants.map((applicant) => (
+                {[...filteredApplicants].sort((a, b) => {
+              if (sortedBy === "course") {
+                // Sort by first course name alpahbetically from formatted courses
+                const aCourseName = a.formattedCourses[0] || "";
+                const bCourseName = b.formattedCourses[0] || "";
+                return aCourseName.localeCompare(bCourseName);
+              } else if (sortedBy === "availability") {
+                // For availability sorting, we do secondary sort by name
+                const availabilityComparison = a.availability.localeCompare(b.availability);
+
+                if(availabilityComparison!==0){
+                  return availabilityComparison;
+                }
+                return a.name.localeCompare(b.name);
+              }
+              return 0; // No sorting
+            }).map((applicant) => (
                   <Tr key={applicant.applicationId}>
                     {/* Selection checkbox - only shown in selection mode */}
                     {isSelecting && (
