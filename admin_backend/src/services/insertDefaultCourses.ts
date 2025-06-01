@@ -1,5 +1,5 @@
-import { AppDataSource } from "../data-source";
-import { Course } from "../entity/Course";
+import { AppDataSource } from "../datasource";
+import { Course } from "../entities/Course";
 
 export const insertDefaultCourses = async () => {
   const courseRepo = AppDataSource.getRepository(Course);
