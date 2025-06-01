@@ -262,13 +262,13 @@ export class ApplicationController {
       }
 
       //Input validations
-      if(rank!==undefined && (typeof rank !=="number" || rank < 0)){
+      if(rank!==undefined && rank!==null && (typeof rank !=="number" || rank < 0)){
         return res.status(400).json({
           error: "Rank must be a non-negative number"
         });
       }
 
-      if(comments!==undefined && typeof rank !=="string" ){
+      if(comments!==undefined && comments!==null && typeof comments !=="string" ){
         return res.status(400).json({
           error: "Comments must be a string"
         });
