@@ -6,7 +6,7 @@ export class Course {
   @PrimaryGeneratedColumn()
   courseID: number;
 
-  @Column()
+  @Column({ unique: true })
   courseCode: string;
 
   @Column()

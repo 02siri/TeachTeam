@@ -36,6 +36,49 @@ export const resolvers = {
       return users.filter(user =>
         user.applications?.every(app => (app.selectedCourses?.length ?? 0) === 0)
       );
-    }
-  }
+    },
+    
+    getCourses: async () => {
+      const courseRepo = AppDataSource.getRepository(Course);
+      return await courseRepo.find();
+    },
+
+  },
+
+  Mutation: {
+    addCourse: async (_: unknown, { input }: { input: Partial<Course> }) => {
+      const courseRepo = AppDataSource.getRepository(Course);
+      const existing = await courseRepo.findOneBy({ courseCode: input.courseCode });
+      if (existing) {
+        throw new Error("Course code already exists. Please choose a different code.");
+      }
+      const newCourse = courseRepo.create(input);
+      return await courseRepo.save(newCourse);
+    },
+
+
+
+
+
+    editCourse: async (
+      _: unknown,
+      { courseID, input }: { courseID: number | string; input: Partial<Course> }
+    ) => {
+      const courseRepo = AppDataSource.getRepository(Course);
+      const course = await courseRepo.findOneBy({ courseID: Number(courseID) });
+      if (!course) throw new Error("Course not found");
+      Object.assign(course, input);
+      return await courseRepo.save(course);
+    },
+
+
+
+
+    
+    deleteCourse: async (_: unknown, { courseID }: { courseID: number | string }) => {
+      const courseRepo = AppDataSource.getRepository(Course);
+      const result = await courseRepo.delete({ courseID: Number(courseID) });
+      return (result.affected ?? 0) > 0;
+    },
+  },
 };

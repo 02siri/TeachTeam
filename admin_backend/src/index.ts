@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { typeDefs } from "./schema";
 import { resolvers } from "./resolvers";
 import { AppDataSource } from "./datasource";
+import { insertDefaultCourses } from "./services/insertDefaultCourses";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ const startServer = async () => {
   try {
     await AppDataSource.initialize();
     console.log("Database connected");
+    await insertDefaultCourses();
 
     const server = new ApolloServer({
       typeDefs,
