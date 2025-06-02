@@ -8,6 +8,7 @@ export const typeDefs = gql`
     email: String!
     dateOfJoining: String!
     assignedCourses: [Course!]!
+    isBlocked: Boolean!
   }
 
   type CandidatesPerCourse {
@@ -20,9 +21,9 @@ export const typeDefs = gql`
     candidatesChosenForMoreThanThree: [User]
     candidatesNotChosen: [User]
     getCourses: [Course!] 
-    getLecturers : [User!]!   
+    getLecturers : [User!]! 
+    getAllUsers: [User!]!  
   }
-
 
   type Course {
     courseID: ID!
@@ -46,6 +47,7 @@ export const typeDefs = gql`
     deleteCourse(courseID: ID!): Boolean
     login(username:String!, password: String!): Boolean
     assignLectToCourses(userId: ID!, courseIds: [ID!]!): Boolean!
+    blockUsers(userId: ID!, isBlocked:Boolean!): Boolean!
   }
 
 `;

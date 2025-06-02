@@ -55,6 +55,10 @@ export const resolvers = {
       });
     },
 
+    getAllUsers : async ()=>{
+      const userRepo = AppDataSource.getRepository(Users);
+      return await userRepo.find();
+    },
   },
 
   Mutation: {
@@ -128,5 +132,18 @@ export const resolvers = {
       await userRepo.save(lecturer);
       return true;
     },
+
+    blockUsers: async(_:unknown, {userId, isBlocked}: {userId: number, isBlocked: boolean})=>{
+      const userRepo = AppDataSource.getRepository(Users);
+      const user = await userRepo.findOneBy({id: userId});
+
+      if(!user)
+        throw new Error("User not found");
+
+      user.isBlocked = isBlocked;
+      await userRepo.save(user);
+      return true;
+    },
+
   },
 };
