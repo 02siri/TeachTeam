@@ -41,8 +41,8 @@ export const typeDefs = gql`
     addCourse(input: CourseInput!): Course
     editCourse(courseID: ID!, input: CourseInput!): Course
     deleteCourse(courseID: ID!): Boolean
-  }
 
-  
+    login(username:String!, password: String!): Boolean
+  }
 
 `;

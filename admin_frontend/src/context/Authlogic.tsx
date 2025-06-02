@@ -1,4 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import {gql, useMutation} from "@apollo/client";
+
+const LOGIN = gql `
+mutation Login($username: String! , $password: String!){
+login(username: $username, password: $password)
+}
+`;
 
 interface AuthContextType {
   isAdmin: boolean;
@@ -9,29 +16,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState<boolean>(
-    typeof window !== "undefined" && sessionStorage.getItem("isAdmin") === "true"
-  );
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [loginMutation] = useMutation(LOGIN);
  
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = sessionStorage.getItem("isAdmin");
-      if (stored === "true") setIsAdmin(true);
-    }
+    const stored = sessionStorage.getItem("isAdmin");
+    if (stored === "true") 
+      setIsAdmin(true);
   }, []);
 
-  const login = async (credentials: { username: string; password: string }): Promise<boolean> => {
-    const { username, password } = credentials;
-
-    if (username === "admin" && password === "admin") {
+  const login = async ({username, password}: { username: string; password: string })=> {
+    try{
+    const res = await loginMutation({variables: {username, password}});
+    const success = res.data?.login;
+    if(success){
       sessionStorage.setItem("isAdmin", "true");
       setIsAdmin(true);
       return true;
     }
-
-    return false;
-  };
+  }catch(error){
+    console.error("Login Error: ", error);
+  }
+  return false;
+};
 
   const logout = async () => {
     sessionStorage.removeItem("isAdmin");
