@@ -7,6 +7,7 @@ export const typeDefs = gql`
     lastName: String!
     email: String!
     dateOfJoining: String!
+    assignedCourses: [Course!]!
   }
 
   type CandidatesPerCourse {
@@ -18,7 +19,8 @@ export const typeDefs = gql`
     candidatesChosenPerCourse: [CandidatesPerCourse]
     candidatesChosenForMoreThanThree: [User]
     candidatesNotChosen: [User]
-    getCourses: [Course]    
+    getCourses: [Course!] 
+    getLecturers : [User!]!   
   }
 
 
@@ -28,6 +30,7 @@ export const typeDefs = gql`
     courseName: String!
     semester: String!
     description: String!
+    lecturers: [User!]!
   }
 
   input CourseInput {
@@ -41,8 +44,8 @@ export const typeDefs = gql`
     addCourse(input: CourseInput!): Course
     editCourse(courseID: ID!, input: CourseInput!): Course
     deleteCourse(courseID: ID!): Boolean
-
     login(username:String!, password: String!): Boolean
+    assignLectToCourses(userId: ID!, courseIds: [ID!]!): Boolean!
   }
 
 `;

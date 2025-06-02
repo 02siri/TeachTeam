@@ -12,6 +12,7 @@ import * as bcrypt from "bcryptjs";
 import { Application } from "./Application";
 import { AcademicCredential } from "./AcademicCredential"; 
 import { Skills } from "./Skills";
+import { Course } from "./Course";
 
 @Entity()
 export class Users {
@@ -48,6 +49,10 @@ export class Users {
   @ManyToMany(() => Skills)
   @JoinTable()
   skills: Skills[];
+
+  @ManyToMany(()=> Course, (course)=>course.lecturers)
+  @JoinTable()
+  assignedCourses: Course[];
 
   @BeforeInsert()
   @BeforeUpdate()

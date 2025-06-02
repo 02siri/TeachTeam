@@ -1,3 +1,4 @@
+import { In, Like } from "typeorm";
 import { AppDataSource } from "./datasource";
 import { Course } from "./entities/Course";
 import { Users } from "./entities/Users";
@@ -41,7 +42,17 @@ export const resolvers = {
     
     getCourses: async () => {
       const courseRepo = AppDataSource.getRepository(Course);
-      return await courseRepo.find();
+      return await courseRepo.find({
+        relations: ['lecturers']
+      });
+    },
+
+    getLecturers: async ()=>{
+      const userRepo = AppDataSource.getRepository(Users);
+      return await userRepo.find({
+        where: {email: Like ('%@staff.rmit.edu.au')},
+        relations: ['assignedCourses'],
+      });
     },
 
   },
@@ -57,10 +68,6 @@ export const resolvers = {
       return await courseRepo.save(newCourse);
     },
 
-
-
-
-
     editCourse: async (
       _: unknown,
       { courseID, input }: { courseID: number | string; input: Partial<Course> }
@@ -72,10 +79,6 @@ export const resolvers = {
       return await courseRepo.save(course);
     },
 
-
-
-
-    
     deleteCourse: async (_: unknown, { courseID }: { courseID: number | string }) => {
       const courseRepo = AppDataSource.getRepository(Course);
       const result = await courseRepo.delete({ courseID: Number(courseID) });
@@ -102,6 +105,28 @@ export const resolvers = {
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
       return isPasswordValid;
+    },
+
+    assignLectToCourses: async(_:any, {userId, courseIds} : {userId: number; courseIds: number[]}) => {
+      const userRepo = AppDataSource.getRepository(Users);
+      const courseRepo = AppDataSource.getRepository(Course);
+
+      const lecturer = await userRepo.findOne({
+        where: {id: userId},
+        relations: ['assignedCourses']
+      });
+
+      if(!lecturer)
+        throw new Error('Lecturer Not Found');
+
+      const courses = await courseRepo.findBy({courseID : In(courseIds)});
+      if(courses.length<1)
+        throw new Error ('A Lecturer must be assigned to at least one course');
+
+      lecturer.assignedCourses =  courses;
+
+      await userRepo.save(lecturer);
+      return true;
     },
   },
 };

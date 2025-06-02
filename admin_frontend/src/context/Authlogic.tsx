@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {gql, useMutation} from "@apollo/client";
+import { useRouter } from "next/router";
 
 const LOGIN = gql `
 mutation Login($username: String! , $password: String!){
@@ -18,7 +19,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loginMutation] = useMutation(LOGIN);
- 
+ const router = useRouter();
+
 
   useEffect(() => {
     const stored = sessionStorage.getItem("isAdmin");
@@ -44,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     sessionStorage.removeItem("isAdmin");
     setIsAdmin(false);
+    router.push("/login");
   };
 
   return (
