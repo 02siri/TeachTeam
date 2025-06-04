@@ -1,3 +1,4 @@
+import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import { useAuth } from "../context/Authlogic";
 import Link from "next/link";
 import Image from "next/image";
@@ -6,70 +7,177 @@ const Home = () => {
   const { isAdmin } = useAuth();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="relative h-screen flex items-center justify-center text-white bg-black overflow-hidden">
-        <div className="absolute left-[-150px] top-1/2 transform -translate-y-1/2 w-[500px] h-[500px] bg-blue-100 opacity-20 blur-[160px] rounded-full z-0" />
-        <div className="absolute right-[-150px] top-1/2 transform -translate-y-1/2 w-[500px] h-[500px] bg-cyan-200 opacity-20 blur-[160px] rounded-full z-0" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/30 to-white z-0 pointer-events-none" />
+    <Flex 
+    direction="column" 
+    minH="100vh">
 
-        <div className="relative container mx-auto flex flex-col-reverse md:flex-row justify-between items-center max-w-7xl">
-          <div className="text-center md:text-left max-w-xl">
-            <h1 className="text-5xl md:text-7xl font-extrabold leading-tight text-white">
-              Welcome to <span className="text-blue-300">Teach Team</span>
-            </h1>
+      {/*header mainly for height and color*/}
+      <Box
+        as="header"
+        position="relative"
+        h="100vh"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        bg="black"
+        overflow="hidden"
+        color="white"
+      >
+        {/*I tried to match with the actual TeachTeam css using chakraUI here this 2 boxes from right and left*/}
+        <Box
+          position="absolute"
+          left="-150px"
+          top="50%"
+          transform="translateY(-50%)"
+          w="500px"
+          h="500px"
+          bg="blue.100"
+          opacity="0.2"
+          filter="blur(160px)"
+          borderRadius="full"
+          zIndex={0}
+        />
+        <Box
+          position="absolute"
+          right="-150px"
+          top="50%"
+          transform="translateY(-50%)"
+          w="500px"
+          h="500px"
+          bg="cyan.200"
+          opacity="0.2"
+          filter="blur(160px)"
+          borderRadius="full"
+          zIndex={0}
+        />
+        {/*gradient effect*/}
+        <Box
+          position="absolute"
+          inset="0"
+          bgGradient="linear(to-b, transparent, rgba(30,58,138,0.3), white)"
+          zIndex={0}
+          pointerEvents="none"
+        />
 
-            <p className="mt-6 text-xl md:text-2xl text-blue-100">
+        {/*here goest the content */}
+        <Flex
+          direction={{ base: "column-reverse", md: "row" }}
+          justify="space-between"
+          align="center"
+          zIndex={1}
+          maxW="7xl"
+          w="full"
+          px={6}
+          mx="auto"
+        >
+          {/*left text*/}
+          <Box textAlign={{ base: "center", md: "left" }} maxW="xl">
+            <Heading
+              fontSize={{ base: "4xl", md: "6xl" }}
+              fontWeight="extrabold"
+              lineHeight="tight"
+              color="white"
+            >
+              Welcome to <Box as="span" color="blue.300">Teach Team</Box>
+            </Heading>
+
+            <Text
+              mt={6}
+              fontSize={{ base: "lg", md: "2xl" }}
+              color="blue.100"
+            >
               Admin portal for managing courses, lecturers, candidates and reports.
-            </p>
+            </Text>
 
             {isAdmin && (
-              <div className="mt-8">
-                <Link href="/course">
-                  <button
-                    className="relative inline-block text-white font-semibold py-3 px-8 rounded-full transition duration-300 group overflow-hidden shadow-lg border border-white cursor-pointer"
-                    style={{
-                      boxShadow: "0 0 15px rgba(255, 255, 255, 0.6)",
+              <Box mt={8}>
+                <Link href="/course" passHref>
+                  <Button
+                    as="a"
+                    size="lg"
+                    px={8}
+                    py={6}
+                    borderRadius="full"
+                    fontWeight="semibold"
+                    color="white"
+                    bgGradient="linear(to-r, #0E4C92, #002147)"
+                    _hover={{
+                      bgGradient: "linear(to-r, #002147, #0E4C92)",
+                      boxShadow: "0 0 15px rgba(255, 255, 255, 0.6)"
                     }}
+                    boxShadow="0 0 15px rgba(255, 255, 255, 0.6)"
                   >
-                    <span className="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full transition-all duration-300"></span>
-                    <span className="relative z-10">Manage Dashboard</span>
-                  </button>
+                    Manage Courses
+                  </Button>
                 </Link>
-              </div>
+              </Box>
             )}
-          </div>
+          </Box>
 
-          <div className="flex flex-row items-center">
-            <Image src="/home.png" alt="Teach Team image" width={1200} height={1200} />
-          </div>
-        </div>
-      </header>
+          {/*image here... */}
+          <Box>
+            <Image src="/home.png" alt="Teach Team image" width={1000} height={1000} />
+          </Box>
+        </Flex>
+      </Box>
 
+      {/* sign-in option here for admins... flex box for height and stuffs*/}
       {!isAdmin && (
-        <main
-          className="flex-grow flex items-center justify-center min-h-screen w-full px-6 bg-cover bg-center"
-          style={{ backgroundImage: "url('/bg.jpg')" }}
+        <Flex
+          direction="column" 
+          minH="100vh"
+          flex="1"
+          align="center"
+          justify="center"
+          px={6}
+          py={12}
+          bgImage="url('/bg.jpg')"
+          bgSize="cover"
+          bgPosition="center"
         >
-          <div className="bg-white p-12 rounded-2xl shadow-2xl max-w-2xl w-full text-center">
-            <h2 className="text-4xl font-bold text-gray-800">Admin Access</h2>
-            <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+          {/* This box is the sign-in option for admins */}
+          <Box
+            bg="white"
+            p={12}
+            rounded="2xl"
+            shadow="2xl"
+            maxW="2xl"
+            w="full"
+            textAlign="center"
+          >
+            <Heading size="xl" color="gray.800">
+              Admin Access
+            </Heading>
+
+            <Text mt={4} fontSize="lg" color="gray.600">
               Please sign in using admin credentials to access the dashboard and manage data.
-            </p>
-            <div className="mt-8">
-              <Link href="/login">
-                <button
-                  className="relative inline-block text-white font-semibold py-3 px-8 rounded-full transition duration-300 group overflow-hidden shadow-lg border border-white"
-                  style={{ boxShadow: "0 0 15px rgb(71, 71, 71)" }}
+            </Text>
+
+            <Box mt={8}>
+              <Link href="/login" passHref>
+                <Button
+                  as="a"
+                  size="lg"
+                  px={8}
+                  py={6}
+                  borderRadius="full"
+                  fontWeight="semibold"
+                  color="white"
+                  bgGradient="linear(to-r, #0E4C92, #002147)"
+                  _hover={{
+                    bgGradient: "linear(to-r, #002147, #0E4C92)",
+                    boxShadow: "0 0 15px rgb(71, 71, 71)"
+                  }}
+                  boxShadow="0 0 15px rgb(71, 71, 71)"
                 >
-                  <span className="absolute inset-0 bg-gradient-to-r from-[#0E4C92] to-[#002147] group-hover:from-[#002147] group-hover:to-[#0E4C92] rounded-full transition-all duration-300"></span>
-                  <span className="relative z-10">Login</span>
-                </button>
+                  Sign In
+                </Button>
               </Link>
-            </div>
-          </div>
-        </main>
+            </Box>
+          </Box>
+        </Flex>
       )}
-    </div>
+    </Flex>
   );
 };
 

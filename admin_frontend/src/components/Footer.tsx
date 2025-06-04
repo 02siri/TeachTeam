@@ -1,6 +1,6 @@
 import React from "react";
 
-
+//reusing the same thingy from TeachTeam..
 const Footer = () => {
     return (
       <footer className="bg-gradient-to-br from-blue-900 to-black text-white py-6 px-4 text-center font-roboto font-semibold text-base md:text-lg">
