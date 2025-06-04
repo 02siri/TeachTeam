@@ -7,6 +7,7 @@ import { useRef } from "react";
 import React from "react";
 import Head from "next/head";
 import Image from "next/image";
+// import { AxiosError } from 'axios';
 
 
 import {
@@ -27,6 +28,7 @@ import {
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { AxiosError } from "node_modules/axios/index.cjs";
 
 // Custom password input component with show/hide functionality
 function PasswordInput({value, onChange} : {value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>)=>void}) {
@@ -142,7 +144,6 @@ export default function LoginPage(){
         const success = await login({email: formData.email, password: formData.password});
 
         if(success){
-             
                 // Show success toast and redirect on successful login
                 toast({
                     title: "Your Login was Successful ! ",
@@ -153,25 +154,81 @@ export default function LoginPage(){
                 });
                 //router.push("/tutor-dashboard");
                 router.push("/");
-            }else{
-                // Show error for invalid credentials
+            }
+        }catch(err: unknown){
+        console.log("Full error object:", err);
+        
+        // Handle Axios errors properly
+        if(err && typeof err === 'object' && 'response' in err) {
+            const axiosError = err as any;
+            
+            // Get the message from the response data
+            const errorMessage = axiosError.response?.data?.message || '';
+            console.log("Error message from server:", errorMessage);
+            
+            // Check for blocked account (403 status or message content)
+            if(axiosError.response?.status === 403 || errorMessage.toLowerCase().includes("blocked")) {
+                toast({
+                    title: "Account Blocked",
+                    description: "Your account has been blocked. Please contact support.",
+                    status: "error",
+                    duration: 4000,
+                    isClosable: true,
+                });
+            }
+            // Check for invalid credentials (401 status)
+            else if(axiosError.response?.status === 401 || errorMessage.toLowerCase().includes("invalid")) {
                 setErrors((prev)=>({
                     ...prev,
-                    password: "Invalid email or password.",
+                    password: "Invalid email or password"
                 }));
             }
-        }catch(err){
-            console.error("Login Error: ", err);
+            // Generic server error
+            else {
+                toast({
+                    title: "Login Failed",
+                    description: errorMessage || "Please try again",
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            }
+        } 
+        // Handle non-Axios errors (like network errors)
+        else if(typeof err === 'object' && err !== null && 'message' in err) {
+            const errorMessage = (err as {message: string}).message;
+            
+            if(errorMessage.includes("blocked")) {
+                toast({
+                    title: "Account Blocked",
+                    description: "Your account has been blocked. Please contact support.",
+                    status: "error",
+                    duration: 4000,
+                    isClosable: true,
+                });
+            } else {
+                toast({
+                    title: "Login Failed",
+                    description: errorMessage,
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            }
+        }
+        // Fallback for unknown error types
+        else {
             toast({
-                title: "Login Failure",
-                description : "Please try again",
+                title: "Login Failed",
+                description: "An unexpected error occurred. Please try again.",
                 status: "error",
                 duration: 3000,
                 isClosable: true,
             });
-        } finally{
-            setIsSubmitting(false);
         }
+    } finally{
+        setIsSubmitting(false);
+    }
     };
 
         // Array of inspirational teaching quotes for display

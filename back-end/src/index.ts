@@ -25,15 +25,51 @@ app.use((req, res, next) => {
   next();
 });
 
+// app.use(cors({
+//   origin: ['http://localhost:3000','http://localhost:3002'],
+//   credentials: true,
+//   // methods : ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+// }));
+
+// app.options('*', (req, res) => {
+//   res.sendStatus(200);
+// });
 app.use(cors({
-  origin: ['http://localhost:3000','http://localhost:3002'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = ['http://localhost:3000', 'http://localhost:3002'];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  // methods : ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie'],
 }));
 
-app.options('*', (req, res) => {
-  res.sendStatus(200);
-});
+// Handle preflight requests explicitly
+app.options('*', cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = ['http://localhost:3000', 'http://localhost:3002'];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+}));
 
 app.use(express.json());
 app.use("/api", userRoutes);

@@ -20,10 +20,22 @@ export class AuthController{
         try{
             const user = await this.usersRepository.findOneBy({email});
             console.log("Stored Password: ", user ? user.password: "User not found");
+            
             if(!user){
                 return response.status(401).json({
                     message: "Invalid Credentials"
                 })
+            }
+
+            if(user.isBlocked){
+            console.log("User is blocked, returning 403");
+            return response.status(403).json({ 
+                message: "Account is blocked. Please contact support." 
+            });
+            }
+
+            if(!user.isBlocked){
+                console.log("The user is not blocked: ", user.isBlocked);
             }
 
             const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -60,32 +72,3 @@ export class AuthController{
         });
     }
 }
-    // async getCurrentUser(request: Request, response: Response){
-    //     if(request.session.userID){
-    //         try{
-    //             const user = await this.usersRepository.findOneBy({
-    //                 id: request.session.userID
-    //             })
-    //             if(user){
-    //                 const {password,...userWithoutPswd} = user;
-    //                 return response.status(200).json(userWithoutPswd);
-    //             }else{
-    //                 return response.status(404).json({
-    //                     message: "User not found in session"
-    //                 })
-    //             }
-    //         }catch(error){
-    //             console.error("Error fetching current user: ", error);
-    //             return response.status(500).json({
-    //                 message: "Error fetching current user"
-    //             })
-    //         }
-    //     }else{
-    //         return response.status(401).json({
-    //             message : "User not authenticated"
-    //         })
-    //     }
-    // }
-
-//sample2@student.rmit.edu.au
-    //Sam2222#abc

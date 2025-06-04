@@ -8,8 +8,8 @@ import Header from "@/components/Header";
 import { AxiosError } from "axios";
 import Image from "next/image";
 import Link from "next/link";
-import Head from "next/head";
-import { script } from "framer-motion/m";
+// import Head from "next/head";
+// import { script } from "framer-motion/m";
 
 function PasswordInput({value, onChange} : {value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>)=>void}) {
   const [show, setShow] = useState(false); // State to toggle password visibility

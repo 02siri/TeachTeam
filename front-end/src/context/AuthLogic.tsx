@@ -48,16 +48,19 @@ export function AuthProvider(
             console.log("Login response: ", response);
 
             if(response.user && response.user.email && response.user.username){
+                // if(response.user.isBlocked){
+                //     throw new Error("Your account has been blocked. Please contact support.")
+                // }
                 sessionStorage.setItem("CurrentUserEmail", response.user.email);
                 sessionStorage.setItem("CurrentUsername", response.user.username);
                 setCurrentUserEmail(response.user.email);
                 setCurrentUsername(response.user.username);
                 return true;
             }
-            return false;
+            throw new Error("Invalid email or password");
         }catch(error){
             console.log("Login failed: ", error);
-            return false;
+            throw error;
         }
     };
 

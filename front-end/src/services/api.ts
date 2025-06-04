@@ -140,7 +140,9 @@ export const userApi = {
   
 export const authApi = {
   login: async(credentials: {email: string, password: string}) => {
-    const res = await api.post<{message: string; user: {email: string, username: string}}>
+    const res = await api.post<{
+      message: string; 
+      user: {email: string, username: string, isBlocked?:boolean}}>
     ("/login", credentials);
     return res.data
   },
