@@ -1,20 +1,31 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {
     Box,
-    Accordion,
-    AccordionItem,
-    AccordionButton,
-    AccordionPanel,
-    AccordionIcon,
     Button,
     Checkbox,
     VStack,
     Heading,
     Text,
-    useToast
+    useToast,
+    Flex,
+    Spinner,
+    Card,
+    CardBody,
+    HStack,
+    Badge,
+    Container,
+    TableContainer,
+    Table,
+    Th,
+    Thead,
+    Tr,
+    Tbody,
+    Td
 } from "@chakra-ui/react";
-import { useQuery, useMutation, gql } from "@apollo/client";
+import {ChevronLeftIcon, EditIcon} from "@chakra-ui/icons"
+import { useQuery, useMutation, gql, FetchResult} from "@apollo/client";
 
+//GraphQL queries and mutations
 const GET_LECTURERS_AND_COURSES = gql `
 query GetLectAndCourses{
     getLecturers{
@@ -53,6 +64,7 @@ interface User{
     firstName: string;
     lastName: string;
     email: string;
+    assignedCourses: {courseID: number} [];
 }
 
 interface QueryData{
@@ -61,14 +73,35 @@ interface QueryData{
 }
 
 export default function AssignLect(){
-    const {data, loading, error} = useQuery<QueryData>(GET_LECTURERS_AND_COURSES);
+    //Apollo client hooks for data fetching and mutations
+    const {data, loading, error, refetch} = useQuery<QueryData>(GET_LECTURERS_AND_COURSES);
     const [assignLect] = useMutation<QueryData>(ASSIGN_LECTURER);
+    const [view, setView] = useState<'list' | 'edit'>('list');
     const [selectedCourses, setSelectedCourses] = useState<Record<number, Set<number>>>({});
     const toast = useToast();
     
-    const handleCourseToggle = (userId: number, courseId: number) =>{
+    const lecturers : User[] = data?.getLecturers || [];
+    const courses: Course[] = data?.getCourses || [];
+
+    
+    //Initialize selected courses when data loads/lecturers change
+    useEffect(()=>{
+        if (data){
+         const initialSelections : Record<number, Set<number>> = {};
+         lecturers.forEach(lect=>{
+            initialSelections[lect.id] = new Set(lect.assignedCourses.map((c)=>c.courseID));
+         }) 
+         setSelectedCourses(initialSelections);
+        }
+    },[data, lecturers]);
+
+    const handleSelectCourses = () => {
+        setView('edit');
+    }
+
+    const handleCourseToggle = (lectId: number, courseId: number) =>{
         setSelectedCourses((prev)=>{
-            const updated = new Set(prev[userId] || []);
+            const updated = new Set(prev[lectId] || []);
             
             if(updated.has(courseId)){
                 updated.delete(courseId);
@@ -77,17 +110,29 @@ export default function AssignLect(){
             }
             return {
                 ...prev,
-                [userId]: updated
+                [lectId]: updated
             };
         });
     };
 
-    const handleAssign = async(userId: number) =>{
-        const courses = Array.from(selectedCourses[userId] || []);
-        if(courses.length<1){
+    const handleAssign = async() =>{
+        const assignToDo: Promise<FetchResult<QueryData>>[] = [];
+        const lectWithNoAssign : User[]= [];
+
+        lecturers.forEach(lect=>{
+            const coursesForLect = Array.from(selectedCourses[lect.id] || []);
+            if(coursesForLect.length<1){
+                lectWithNoAssign.push(lect);
+            }else{
+                assignToDo.push(
+                    assignLect({variables: {userId: lect.id, courseIds: coursesForLect}}))
+            }
+        });
+
+        if(lectWithNoAssign.length>0){
            toast({
-            title: "Validation Error",
-            description: "A lecturer must be assigned to at least one course.",
+            title: "Assignment Error",
+            description: "Lecturers must be assigned to at least one course.",
             status: "error",
             duration: 5000,
             isClosable: true,
@@ -96,13 +141,15 @@ export default function AssignLect(){
         }
 
         try{
-            await assignLect({variables: {userId, courseIds: courses}});
+            await Promise.all(assignToDo);
              toast({
-            title: "Lecturer Assigned Successfully",
+            title: "Lecturers Assigned Successfully",
             status: "success",
             duration: 5000,
             isClosable: true,
            });
+           setView('list');
+           refetch();
         }catch(error){
             toast({
             title: "Failed To Assign Lecturer ",
@@ -115,53 +162,201 @@ export default function AssignLect(){
         }
     };
 
+    const handleBack = () =>{
+        setView('list');
+        //Re-initialize selectedCourses to reflect current assignments if user goes back
+        const initialSelections: Record<number, Set<number>> = {};
+        lecturers.forEach(lect=>{
+            initialSelections[lect.id] = new Set(lect.assignedCourses.map((c)=>c.courseID));
+         }) 
+         setSelectedCourses(initialSelections);
+    };
+
+    const getAssignedCoursesNames = (lecturer: User) => {
+        return lecturer.assignedCourses
+        .map(ac=>courses.find(c=>c.courseID === ac.courseID))
+        .filter(Boolean)
+        .map(c=> c!.courseName);
+    };
+
+
     if(loading)
-        return <Text>Loading...</Text>
+        return (
+    <Flex bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={16} justify="center" align="center">
+        <Spinner size="xl" color="white"/>
+        <Text ml={4} color="white" fontSize="xl">Loading Data...</Text>
+    </Flex>);
     
     if(error)
-        return <Text>Error loading data...</Text>
+      return (
+    <Flex bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={16} justify="center" align="center">
+        <Spinner size="xl" color="white"/>
+        <Text ml={4} color="white" fontSize="xl">Error Loading Data: {error.message}</Text>
+    </Flex>
+    );
 
+    if(view==='list'){
+        return(
+            <Box bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={20}>
+            <Heading mb={2} textAlign="center" color="white" fontSize="3xl" py="10">
+             Assign Lecturers To Courses
+            </Heading>
 
-    const lecturers : User[] = data?.getLecturers || [];
-    const courses : Course[] = data?.getCourses || [];
+            <Box px={6} py={10} maxW="6xl" mx="auto" bg="white" borderRadius="lg" shadow="xl">
+            <VStack spacing={8} align="stretch">
+                
+
+                    <Button
+                    leftIcon={<EditIcon/>}
+                    colorScheme="blue"
+                    size="lg"
+                    onClick={handleSelectCourses}
+                    >
+                     Edit Assignments   
+                    </Button>
+               
+
+                <HStack spacing={6} justifyContent="center" flexWrap="wrap" align="stretch">
+                {lecturers.map((lect)=>{
+                    const assignedCourses = getAssignedCoursesNames(lect);
+                    return(
+                        <Card
+                        key={lect.id}
+                        shadow="md"
+                        borderRadius="lg"
+                        transition="all 0.2s"
+                        _hover={{
+                            shadow: "lg",
+                            transform: "translateY(-2px)"
+                        }}
+                      
+                        >
+                            <CardBody>
+                                <VStack spacing={2}>
+                                 <Text textAlign="center" fontSize="lg" fontWeight="bold"  color="blue.700">
+                                    {lect.firstName} {lect.lastName}
+                                 </Text>
+                                <Text fontWeight="semibold" fontSize="md" color="blue.700">
+                                    {lect.email}
+                                </Text>
+
+                                <HStack align="start" spacing={2} flexWrap="wrap">
+                                    {assignedCourses.length>0?(
+                                        assignedCourses.map((courseName, index)=>(
+                                            <Badge
+                                            key={index}
+                                            colorScheme="blue"
+                                            variant="subtle"
+                                            fontSize="sm"
+                                            >
+                                           {courseName}
+                                            </Badge>
+                                        ))
+                                    ):(
+                                        <Badge colorScheme="gray" variant="subtle" fontSize="sm">
+                                            No Courses Assigned
+                                        </Badge>
+                                    )}
+                                </HStack>
+                                </VStack>
+                            </CardBody>
+                        </Card>
+                    );
+                })}
+                </HStack>
+            </VStack>
+            </Box>
+            </Box>
+        );
+    }
+
 
     return(
-        <Box p={8} maxW="4xl" mx="auto">
-            <Heading mb={6}>Assign Lecturers To Courses</Heading>
-            <Accordion allowToggle>
-               {lecturers.map((lecturer)=>(
-                <AccordionItem key={lecturer.id}>
-                     <h2>
-              <AccordionButton>
-                <Box flex="1" textAlign="left">
-                  {lecturer.firstName} {lecturer.lastName} ({lecturer.email})
-                </Box>
-                <AccordionIcon />
-              </AccordionButton>
-            </h2>
-            <AccordionPanel>
-              <VStack align="start" spacing={2}>
-                {courses.map((course) => (
-                  <Checkbox
-                    key={course.courseID}
-                    isChecked={selectedCourses[lecturer.id]?.has(course.courseID) || false}
-                    onChange={() => handleCourseToggle(lecturer.id, course.courseID)}
-                  >
-                    {course.courseName} (Sem {course.semester})
-                  </Checkbox>
-                ))}
-              </VStack>
-              <Button
-                mt={4}
-                colorScheme="blue"
-                onClick={() => handleAssign(lecturer.id)}
-              >
-                Assign Courses
-              </Button>
-            </AccordionPanel>
-                </AccordionItem>
-               ))}
-            </Accordion>
+       <Box bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={20}>
+            <Heading mb={2} textAlign="center" color="white" fontSize="3xl" py="10">
+             Assign Lectures To Courses
+        </Heading>
+            <Box px={2} py={10} maxW="9xl" mx="auto" bg="white" borderRadius="lg" shadow="xl">
+                    
+                <Container maxW="9xl">
+                    <HStack mb={6}>
+                        <Button
+                        leftIcon={<ChevronLeftIcon/>}
+                        colorScheme="blue"
+                        size="lg"
+                        onClick={handleBack}
+                        >
+                            Back To List
+                        </Button>
+                       
+                    </HStack>
+
+                    <TableContainer>
+                        <Table variant="simple" size="md">
+                            <Thead bg="gray.50">
+                                <Tr>
+                                    <Th fontSize="md">Lecturers</Th>
+                                    {courses.map((course)=>(
+                                        <Th key={course.courseID} textAlign="center" minW="120px">
+                                            <VStack spacing={1}>
+                                                <Text fontSize="sm" fontWeight="bold">
+                                                    {course.courseName}
+                                                </Text>
+                                                <Badge 
+                                                size="xs"
+                                                colorScheme={
+                                                    course.semester === "1"?'yellow' : course.semester === "2"? 'green' : 'blue'
+                                                }
+                                                variant="subtle"
+                                                >Semester {course.semester}</Badge>
+                                            </VStack>
+                                        </Th>
+                                    ))}
+                                </Tr>
+                            </Thead>
+                            <Tbody>
+                                {lecturers.map((lect)=>(
+                                    <Tr 
+                                    key ={lect.id}
+                                    transition="background-color 0.2s"
+                                    >
+                                     <Td>
+                                        <VStack align="start" spacing={1}>
+                                            <Text fontWeight="bold" fontSize="md" color="blue.700">
+                                                {lect.firstName} {lect.lastName}
+                                            </Text>
+                                            <Text fontSize="sm" color="blue.700">
+                                                {lect.email}
+                                            </Text>
+                                        </VStack>
+                                    </Td>   
+                                    {courses.map((course)=>(
+                                        <Td 
+                                        key={course.courseID} textAlign="center">
+                                            <Checkbox 
+                                            isChecked={selectedCourses[lect.id]?.has(course.courseID)||false}
+                                            onChange={()=>handleCourseToggle(lect.id, course.courseID)}
+                                            colorScheme="blue"
+                                            />
+                                        </Td>
+                                    ))}
+                                    </Tr>
+                                ))}
+                            </Tbody>
+                        </Table>
+                    </TableContainer>
+                    <Button
+                    colorScheme="green"
+                    size="lg"
+                    onClick={handleAssign}
+                    mt={6}
+                    w="full"
+                    >
+                        Submit Assignments
+                    </Button>
+                </Container>
+
+            </Box>
         </Box>
     );
 }

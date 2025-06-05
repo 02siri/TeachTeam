@@ -7,8 +7,6 @@ import { useRef } from "react";
 import React from "react";
 import Head from "next/head";
 import Image from "next/image";
-// import { AxiosError } from 'axios';
-
 
 import {
     Box,
@@ -160,10 +158,10 @@ export default function LoginPage(){
         
         // Handle Axios errors properly
         if(err && typeof err === 'object' && 'response' in err) {
-            const axiosError = err as any;
+            const axiosError = err as AxiosError;
             
             // Get the message from the response data
-            const errorMessage = axiosError.response?.data?.message || '';
+            const errorMessage = (axiosError.response?.data as {message?: string})?.message || '';
             console.log("Error message from server:", errorMessage);
             
             // Check for blocked account (403 status or message content)

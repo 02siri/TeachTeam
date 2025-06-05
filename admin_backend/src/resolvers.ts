@@ -111,7 +111,7 @@ export const resolvers = {
       return isPasswordValid;
     },
 
-    assignLectToCourses: async(_:any, {userId, courseIds} : {userId: number; courseIds: number[]}) => {
+    assignLectToCourses: async(_:unknown, {userId, courseIds} : {userId: number; courseIds: number[]}) => {
       const userRepo = AppDataSource.getRepository(Users);
       const courseRepo = AppDataSource.getRepository(Course);
 
