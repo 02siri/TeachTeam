@@ -36,8 +36,9 @@ export const resolvers = {
       });
 
       return users.filter(user =>
-        user.applications?.every(app => (app.selectedCourses?.length ?? 0) === 0)
-      );
+        user.email.endsWith("@student.rmit.edu.au") &&
+        user.applications?.every(app => (app.selectedCourses?.length ?? 0) === 0));
+
     },
     
     getCourses: async () => {
@@ -91,7 +92,7 @@ export const resolvers = {
 
     login: async(_:unknown, {username, password} : {username: string, password: string})=>{
       const userRepo = AppDataSource.getRepository(Users);
-      let user = await userRepo.findOneBy({username});
+      const user = await userRepo.findOneBy({username});
 
       if(!user && username === "admin"){
         const newAdmin = userRepo.create({
