@@ -6,41 +6,82 @@ import * as bcrypt from "bcryptjs";
 
 export const resolvers = {
   Query: {
+    //getting candidates chosen for each course in hte report part..
     candidatesChosenPerCourse: async () => {
       const courseRepo = AppDataSource.getRepository(Course);
-      const allCourses = await courseRepo.find({
-        relations: ["applicationsSelectedFor", "applicationsSelectedFor.user"],
+      const courses = await courseRepo.find({
+        relations: ["applicationsSelectedFor", "applicationsSelectedFor.user", "applicationsSelectedFor.selectedCourses"],
       });
-
-      return allCourses.map(course => ({
+      //structure that frontend expects courseName + selected users
+      return courses.map((course) => ({
         courseName: course.courseName,
-        selectedCandidates: (course.applicationsSelectedFor ?? []).map(app => app.user),
+        selectedCandidates: (course.applicationsSelectedFor ?? []).map((app) => ({
+          ...app.user,
+          appliedCourses: app.selectedCourses.map((c) => ({
+            courseName: c.courseName,
+            isSelected: true,  //bcz its the selected course...
+          })), 
+        })),
       }));
     },
+    
 
+
+   //candidates chosen for more thant 3 courses..
     candidatesChosenForMoreThanThree: async () => {
       const userRepo = AppDataSource.getRepository(Users);
       const users = await userRepo.find({
-        relations: ["applications", "applications.selectedCourses"],
+        relations: ["applications", "applications.selectedCourses", "applications.courses"],
       });
-
-      return users.filter(user =>
-        user.applications?.some(app => app.selectedCourses?.length > 3)
-      );
+      return users
+      //total number of selected ccourses for the user..
+      .filter(user => {
+        const totalSelected = user.applications?.reduce(
+          (acc, app) => acc + (app.selectedCourses?.length || 0),
+          0
+        );
+        return totalSelected > 3;
+      })
+      .map(user => ({
+        ...user,
+        appliedCourses: user.applications.flatMap(app =>
+          app.courses.map(course => ({
+            courseName: course.courseName,
+            isSelected: app.selectedCourses.some(
+              selected => selected.courseID === course.courseID
+            ),
+          }))
+        ),
+      }));
     },
+    
+    
 
+    //candidates not chosen for nay course..
     candidatesNotChosen: async () => {
       const userRepo = AppDataSource.getRepository(Users);
       const users = await userRepo.find({
-        relations: ["applications", "applications.selectedCourses"],
+        relations: ["applications", "applications.selectedCourses", "applications.courses"],
       });
-
-      return users.filter(user =>
+      return users
+      //only needed studetns not hte staffs..
+      .filter(user =>
         user.email.endsWith("@student.rmit.edu.au") &&
-        user.applications?.every(app => (app.selectedCourses?.length ?? 0) === 0));
-
+        user.applications?.every(app => (app.selectedCourses?.length ?? 0) === 0)
+      )
+      .map(user => ({
+        ...user,
+        appliedCourses: user.applications.flatMap(app =>
+          app.courses.map(course => ({
+            courseName: course.courseName,
+            isSelected: app.selectedCourses.some(selected => selected.courseID === course.courseID),
+          }))
+        ),
+      }));
     },
+
     
+
     getCourses: async () => {
       const courseRepo = AppDataSource.getRepository(Course);
       return await courseRepo.find({
@@ -62,9 +103,16 @@ export const resolvers = {
     },
   },
 
+
+
+
+  //edit the courses...
   Mutation: {
+    
+    //add a new course...
     addCourse: async (_: unknown, { input }: { input: Partial<Course> }) => {
       const courseRepo = AppDataSource.getRepository(Course);
+      //won't add if the ocurse code already exisits.. 
       const existing = await courseRepo.findOneBy({ courseCode: input.courseCode });
       if (existing) {
         throw new Error("Course code already exists. Please choose a different code.");
@@ -73,6 +121,9 @@ export const resolvers = {
       return await courseRepo.save(newCourse);
     },
 
+
+
+    //edit a course..
     editCourse: async (
       _: unknown,
       { courseID, input }: { courseID: number | string; input: Partial<Course> }
@@ -84,6 +135,9 @@ export const resolvers = {
       return await courseRepo.save(course);
     },
 
+
+
+    //delete a course..
     deleteCourse: async (_: unknown, { courseID }: { courseID: number | string }) => {
       const courseRepo = AppDataSource.getRepository(Course);
       const result = await courseRepo.delete({ courseID: Number(courseID) });

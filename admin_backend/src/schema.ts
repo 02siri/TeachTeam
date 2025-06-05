@@ -1,5 +1,9 @@
 import { gql } from "graphql-tag";
 
+//type is like an interface in TypeScript, it defines the shape of User, AppliedCourse, CandidatesPerCoruse...
+//type Query: read-only entry points.. jsut getting..
+//type input is for input fielfs for muttations.. for adding editing and delting courses..
+//type mutation is write/update/delete operations...
 export const typeDefs = gql`
   type User {
     id: ID!
@@ -9,20 +13,17 @@ export const typeDefs = gql`
     dateOfJoining: String!
     assignedCourses: [Course!]!
     isBlocked: Boolean!
+    appliedCourses: [AppliedCourse!]
+  }
+
+  type AppliedCourse {
+    courseName: String!
+    isSelected: Boolean!
   }
 
   type CandidatesPerCourse {
     courseName: String!
     selectedCandidates: [User]
-  }
-
-  type Query {
-    candidatesChosenPerCourse: [CandidatesPerCourse]
-    candidatesChosenForMoreThanThree: [User]
-    candidatesNotChosen: [User]
-    getCourses: [Course!] 
-    getLecturers : [User!]! 
-    getAllUsers: [User!]!  
   }
 
   type Course {
@@ -34,12 +35,24 @@ export const typeDefs = gql`
     lecturers: [User!]!
   }
 
+  
+  type Query {
+    candidatesChosenPerCourse: [CandidatesPerCourse]
+    candidatesChosenForMoreThanThree: [User]
+    candidatesNotChosen: [User]
+    getCourses: [Course!] 
+    getLecturers : [User!]! 
+    getAllUsers: [User!]!  
+  }
+
+
   input CourseInput {
     courseCode: String!
     courseName: String!
     semester: String!
     description: String!
   }
+
 
   type Mutation {
     addCourse(input: CourseInput!): Course
