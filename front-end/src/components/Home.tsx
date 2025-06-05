@@ -338,7 +338,7 @@ const Home = () => {
         transition={{ delay: 0.7, duration: 0.8 }}
         className="mt-8"
       >
-        <Link href="/login">
+        <Link href="/login" passHref>
           <button
             className="relative inline-block text-white font-semibold py-3 px-8 rounded-full transition duration-300 group overflow-hidden shadow-lg border border-white"
             style={{ boxShadow: "0 0 15px rgb(71, 71, 71)" }}

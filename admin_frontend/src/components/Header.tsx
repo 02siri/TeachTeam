@@ -42,7 +42,6 @@ const Header = () => {
           menuOpen ? "flex" : "hidden"
           } absolute top-20 left-0 w-full flex-col items-center space-y-6 bg-black/90 text-base font-medium md:flex md:static md:flex-row md:space-y-0 md:space-x-6 md:bg-transparent md:p-0 md:justify-center`}
           >
-
           <li>
             <Link
               href="/"
@@ -104,10 +103,11 @@ const Header = () => {
               </button>
             </>
           ) : (
-            <Link href="/login" passHref>
-              <a className="px-4 py-2 rounded-full text-white border border-red-500 transition duration-300 hover:bg-red-500 hover:text-white shadow-sm hover:shadow-[0_0_10px_rgba(255,0,0,0.5)]">
+            <Link href="/login"
+              className="px-4 py-2 rounded-full text-white border border-red-500 transition duration-300 hover:bg-red-500 hover:text-white shadow-sm hover:shadow-[0_0_10px_rgba(255,0,0,0.5)]"
+              >
                 Login
-              </a>
+              
             </Link>
           )}
         </div>
