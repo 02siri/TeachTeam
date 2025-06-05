@@ -50,6 +50,8 @@ export interface Tutor {
 const TutorDashboard = () => {
   const {currentUserEmail} = useAuth();   //get the currently authenticated user..
 
+  const isStudent = currentUserEmail?.endsWith("@student.rmit.edu.au");
+
   type CourseOption = {
     id: string;
     name: string;
@@ -324,6 +326,20 @@ useEffect(() => {
   //it also has a close button to dismiss the toast manually..
   //the toast is created using the useToast hook from Chakra UI..
   const toast = useToast();
+
+  //so this is just for lecturer.. incase u try to login as lecturer and give the URL this won't allow hte lecturer to apply..
+  if (!isStudent) {
+    return (
+      <>
+        <Flex minH="100vh" align="center" justify="center" bg="gray.50" p={10}>
+          <Box textAlign="center" p={6} bg="white" shadow="xl" rounded="md">
+            <Text fontSize="2xl" fontWeight="bold" color="red.500">Access Denied</Text>
+            <Text mt={2}>This page is only accessible to students.</Text>
+          </Box>
+        </Flex>
+      </>
+    );
+  }
   
 
   return (

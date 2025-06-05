@@ -283,7 +283,7 @@ const Home = () => {
         
         {/* RIGHT: IMAGE STACK */}
         <div className="flex flex-row items-center">
-        <Image src="/home.png" alt="Teach Team image" width={500} height={500} />
+        <Image src="/home.png" alt="Teach Team image" width={900} height={900} />
         </div>
       </div>
       
