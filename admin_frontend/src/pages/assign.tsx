@@ -22,7 +22,6 @@ import {
     Tbody,
     Td
 } from "@chakra-ui/react";
-import {ChevronLeftIcon, EditIcon} from "@chakra-ui/icons"
 import { useQuery, useMutation, gql, FetchResult} from "@apollo/client";
 
 //GraphQL queries and mutations
@@ -33,6 +32,7 @@ query GetLectAndCourses{
     firstName
     lastName
     email
+    dateOfJoining
     assignedCourses{
         courseID
         }
@@ -40,6 +40,7 @@ query GetLectAndCourses{
     getCourses{
     courseID
     courseName
+    courseCode
     semester
     }
 }
@@ -64,6 +65,7 @@ interface User{
     firstName: string;
     lastName: string;
     email: string;
+    dateOfJoining: string;
     assignedCourses: {courseID: number} [];
 }
 
@@ -172,11 +174,21 @@ export default function AssignLect(){
          setSelectedCourses(initialSelections);
     };
 
-    const getAssignedCoursesNames = (lecturer: User) => {
-        return lecturer.assignedCourses
+    const DisplayAssignedCourses = (lecturer: User) => {
+        const assignedCourses = lecturer.assignedCourses
         .map(ac=>courses.find(c=>c.courseID === ac.courseID))
         .filter(Boolean)
-        .map(c=> c!.courseName);
+        .map(c=> `${c!.courseCode} ${c?.courseName} (Sem ${c?.semester})`);
+
+        return assignedCourses.length > 0 ? 
+        (<VStack align="center" spacing={1}>
+            {assignedCourses.map((course, index)=>(
+                <Text key={index} fontWeight="semibold" fontSize="md" color="blue.700">
+                    {course}
+                </Text>
+            ))}
+        </VStack>
+        ):(<Text fontSize="sm" color="gray.300">No Courses Assigned</Text>);
     };
 
 
@@ -198,73 +210,84 @@ export default function AssignLect(){
     if(view==='list'){
         return(
             <Box bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={20}>
+            <Box maxW="6xl" mx="auto">
             <Heading mb={2} textAlign="center" color="white" fontSize="3xl" py="10">
              Assign Lecturers To Courses
             </Heading>
 
-            <Box px={6} py={10} maxW="6xl" mx="auto" bg="white" borderRadius="lg" shadow="xl">
+            <Card 
+            bg="white" 
+            borderRadius="lg" 
+            shadow="lg"
+            transition = "all 0.3s ease-in-out"
+            _hover={{
+                transform: "scale(1.02)", boxShadow: "xl"
+            }}
+            >
+            <CardBody p={6}>
             <VStack spacing={8} align="stretch">
-                
-
-                    <Button
-                    leftIcon={<EditIcon/>}
-                    colorScheme="blue"
-                    size="lg"
-                    onClick={handleSelectCourses}
-                    >
-                     Edit Assignments   
-                    </Button>
-               
-
-                <HStack spacing={6} justifyContent="center" flexWrap="wrap" align="stretch">
-                {lecturers.map((lect)=>{
-                    const assignedCourses = getAssignedCoursesNames(lect);
-                    return(
-                        <Card
-                        key={lect.id}
-                        shadow="md"
-                        borderRadius="lg"
-                        transition="all 0.2s"
-                        _hover={{
-                            shadow: "lg",
-                            transform: "translateY(-2px)"
-                        }}
-                      
-                        >
-                            <CardBody>
-                                <VStack spacing={2}>
-                                 <Text textAlign="center" fontSize="lg" fontWeight="bold"  color="blue.700">
-                                    {lect.firstName} {lect.lastName}
-                                 </Text>
-                                <Text fontWeight="semibold" fontSize="md" color="blue.700">
+               <TableContainer>
+                <Table  variant="striped" colorScheme="gray">
+                    <Thead bg="gray.100">
+                        <Tr>
+                            <Th textAlign="center">Lecturers</Th>
+                            <Th textAlign="center">Email</Th>
+                            <Th textAlign="center">Courses Assigned</Th>
+                        </Tr>
+                    </Thead>
+                    <Tbody>
+                    {lecturers.map((lect)=>(
+                        <Tr key={lect.id}>
+                            <Td>
+                                <VStack align="center" spacing={1}>
+                                    <Text fontWeight="semibold" fontSize="md" color="blue.700">
+                                        {lect.firstName} {lect.lastName}
+                                    </Text>
+                                    <Text fontSize="xs" color="gray.500">
+                                    Joined: {new Date(Number(lect.dateOfJoining)).toLocaleDateString()}
+                                    </Text>
+                                </VStack>
+                            </Td>
+                            <Td>
+                                <Text fontWeight="semibold" fontSize="md" color="blue.700" textAlign="center">
                                     {lect.email}
                                 </Text>
-
-                                <HStack align="start" spacing={2} flexWrap="wrap">
-                                    {assignedCourses.length>0?(
-                                        assignedCourses.map((courseName, index)=>(
-                                            <Badge
-                                            key={index}
-                                            colorScheme="blue"
-                                            variant="subtle"
-                                            fontSize="sm"
-                                            >
-                                           {courseName}
-                                            </Badge>
-                                        ))
-                                    ):(
-                                        <Badge colorScheme="gray" variant="subtle" fontSize="sm">
-                                            No Courses Assigned
-                                        </Badge>
-                                    )}
-                                </HStack>
-                                </VStack>
-                            </CardBody>
-                        </Card>
-                    );
-                })}
-                </HStack>
+                            </Td>
+                            <Td>
+                                <Text fontSize="md">
+                                    {DisplayAssignedCourses(lect)}
+                                </Text>
+                            </Td>
+                        </Tr>
+                    ))}
+                    </Tbody>
+                </Table>
+               </TableContainer>
+               <Flex justify="center">
+                    <Button
+                    px={5}
+                    py={2}
+                    rounded="full"
+                    fontWeight="semibold"
+                    fontSize="sm"
+                    border="1px solid"
+                    bg="blue.600"
+                    color="white"
+                    borderColor="blue.300"
+                    _hover={{
+                        bg:"blue.700",
+                        color:"white",
+                        boxShadow:"0 0 10px rgba(173, 216, 230, 0.6)",
+                    }}
+                    onClick={handleSelectCourses}
+                    
+                    >
+                     Assign Courses   
+                    </Button>
+               </Flex>
             </VStack>
+            </CardBody>
+            </Card>        
             </Box>
             </Box>
         );
@@ -272,67 +295,112 @@ export default function AssignLect(){
 
 
     return(
-       <Box bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={20}>
-            <Heading mb={2} textAlign="center" color="white" fontSize="3xl" py="10">
+       <Box bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={16}>
+        <Box maxW="9xl" mx="auto">
+            <Heading textAlign="center" color="white" fontSize="3xl" mt={2} mb={8}>
              Assign Lectures To Courses
         </Heading>
-            <Box px={2} py={10} maxW="9xl" mx="auto" bg="white" borderRadius="lg" shadow="xl">
-                    
+           <Card 
+            bg="white" 
+            borderRadius="lg" 
+            shadow="lg"
+            transition = "all 0.3s ease-in-out"
+            _hover={{
+                transform: "scale(1.02)", boxShadow: "xl"
+            }}
+            >
+            <CardBody p={6}>
                 <Container maxW="9xl">
-                    <HStack mb={6}>
+                    <HStack mb={6} justify="space-between">
                         <Button
-                        leftIcon={<ChevronLeftIcon/>}
-                        colorScheme="blue"
-                        size="lg"
+                        px={5}
+                        py={2}
+                        rounded="full"
+                        fontWeight="semibold"
+                        fontSize="sm"
+                        border="1px solid"
+                        bg="blue.600"
+                        color="white"
+                        borderColor="blue.300"
+                        _hover={{
+                            bg:"blue.700",
+                            color:"white",
+                            boxShadow:"0 0 10px rgba(173, 216, 230, 0.6)",
+                        }}
                         onClick={handleBack}
                         >
-                            Back To List
+                        Back
+                        </Button>
+
+                        <Button
+                        px={5}
+                        py={2}
+                        rounded="full"
+                        fontWeight="semibold"
+                        fontSize="sm"
+                        border="1px solid"
+                        bg="blue.600"
+                        color="white"
+                        borderColor="blue.300"
+                        transition="all 0.2s ease-in-out"
+                        _hover={{
+                            bg:"blue.700",
+                            color:"white",
+                            boxShadow:"0 0 10px rgba(173, 216, 230, 0.6)",
+                            transform: "scale(1.05)"
+
+                        }}
+                        onClick={handleAssign}
+                        >
+                        Assign Courses
                         </Button>
                        
                     </HStack>
 
                     <TableContainer>
-                        <Table variant="simple" size="md">
-                            <Thead bg="gray.50">
+                        <Table variant="striped" colorScheme="gray">
+                            <Thead bg="gray.100">
                                 <Tr>
-                                    <Th fontSize="md">Lecturers</Th>
-                                    {courses.map((course)=>(
-                                        <Th key={course.courseID} textAlign="center" minW="120px">
+                                    <Th fontSize="md" textAlign="center">Courses / Lecturers</Th>
+                                    {lecturers.map((lect)=>(
+                                        <Th key={lect.id} textAlign="center" minW="120px" textTransform="none">
                                             <VStack spacing={1}>
-                                                <Text fontSize="sm" fontWeight="bold">
-                                                    {course.courseName}
+                                                <Text fontSize="sm" fontWeight="bold" color="blue.700" textTransform="uppercase">
+                                                    {lect.firstName} {lect.lastName}
                                                 </Text>
-                                                <Badge 
-                                                size="xs"
-                                                colorScheme={
-                                                    course.semester === "1"?'yellow' : course.semester === "2"? 'green' : 'blue'
-                                                }
-                                                variant="subtle"
-                                                >Semester {course.semester}</Badge>
+                                                <Text fontSize="sm" color="blue.700">
+                                                {lect.email}
+                                                </Text>
+                                                <Text fontSize="xs" color="gray.500">
+                                                Joined: {new Date(Number(lect.dateOfJoining)).toLocaleDateString()}
+                                                </Text>
                                             </VStack>
                                         </Th>
                                     ))}
                                 </Tr>
                             </Thead>
                             <Tbody>
-                                {lecturers.map((lect)=>(
-                                    <Tr 
-                                    key ={lect.id}
-                                    transition="background-color 0.2s"
-                                    >
+                                {courses.map((course)=>(
+                                    <Tr key ={course.courseID}>
                                      <Td>
-                                        <VStack align="start" spacing={1}>
+                                        <VStack align="center" spacing={1}>
                                             <Text fontWeight="bold" fontSize="md" color="blue.700">
-                                                {lect.firstName} {lect.lastName}
+                                               {course.courseCode} - {course.courseName}
                                             </Text>
-                                            <Text fontSize="sm" color="blue.700">
-                                                {lect.email}
-                                            </Text>
+                                            <Badge 
+                                                size="xs"
+                                                colorScheme={
+                                                    course.semester === "1"?'yellow' : course.semester === "2"? 'green' : 'blue'
+                                                }
+                                                variant="subtle"
+                                                >Semester {course.semester}
+                                            </Badge>
+                                            
                                         </VStack>
                                     </Td>   
-                                    {courses.map((course)=>(
+                                    {lecturers.map((lect)=>(
                                         <Td 
-                                        key={course.courseID} textAlign="center">
+                                        key={lect.id} textAlign="center">
                                             <Checkbox 
                                             isChecked={selectedCourses[lect.id]?.has(course.courseID)||false}
                                             onChange={()=>handleCourseToggle(lect.id, course.courseID)}
@@ -345,17 +413,9 @@ export default function AssignLect(){
                             </Tbody>
                         </Table>
                     </TableContainer>
-                    <Button
-                    colorScheme="green"
-                    size="lg"
-                    onClick={handleAssign}
-                    mt={6}
-                    w="full"
-                    >
-                        Submit Assignments
-                    </Button>
                 </Container>
-
+            </CardBody>
+            </Card>
             </Box>
         </Box>
     );
