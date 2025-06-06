@@ -17,7 +17,7 @@ const mockCredentialRepo = { findOne: jest.fn(), create: jest.fn(), save: jest.f
 //mocking the appdataSource to return hte mocked repositories...
 jest.mock('../data-source', () => ({
   AppDataSource: {
-    getRepository: (entity: any) => {
+    getRepository: (entity: Function & { name: string }) => {
       switch (entity.name) {
         case 'Users': return mockUserRepo;
         case 'Course': return mockCourseRepo;
