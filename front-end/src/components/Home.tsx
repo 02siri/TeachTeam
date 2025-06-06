@@ -72,10 +72,12 @@ const Home = () => {
 }
 
   
-  const [mostChosen, setMostChosen] = useState<Applicant | null>(null);
-  const [leastChosen, setLeastChosen] = useState<Applicant | null>(null);
+  const [mostChosen, setMostChosen] = useState<Applicant[]>([]);
+  const [leastChosen, setLeastChosen] = useState<Applicant[]>([]);
   const [rankChartData, setRankChartData] = useState<{ name: string; count: number }[]>([]);
   const [selectionPieData, setSelectionPieData] = useState<{ name: string; value: number }[]>([]);
+  const [showAllMost, setShowAllMost] = useState(false);
+  const [showAllLeast, setShowAllLeast] = useState(false);
 
 
   //effect #1:summarize all tutor application data
@@ -142,9 +144,9 @@ const Home = () => {
   fetchStats();
 }, []);
 
-  
-  
- useEffect(() => {
+
+
+useEffect(() => {
   const fetchInsights = async () => {
     try {
       const allApplicants = await tutorApi.getAllApplications();
@@ -164,32 +166,32 @@ const Home = () => {
       }));
       setRankChartData(rankData);
 
-      let most: Applicant | null = null;
-      let least: Applicant | null = null;
+      let most: Applicant[] = [];
+      let least: Applicant[] = [];
       let highestScore = -Infinity;
       let lowestScore = Infinity;
 
       selectedApplicants.forEach((app: Tutor) => {
-        const totalScore = app.selectedCourses?.reduce((acc, course) => {
-          return acc + (courseFrequencyMap[course.courseCode] || 0);
-        }, 0) || 0;
+        const totalScore = app.selectedCourses?.length || 0;
+        const applicantInfo = {
+          name: `${app.user?.firstName} ${app.user?.lastName}`,
+          email: app.email,
+          selectedCourses: app.selectedCourses?.map(c => c.courseCode) || [],
+          role: [app.sessionType === "tutor" ? "Tutor" : "Lab Assistant"], 
+        };
 
         if (totalScore > highestScore) {
           highestScore = totalScore;
-          most = {
-            name: `${app.user?.firstName} ${app.user?.lastName}`,
-            email: app.email,
-            selectedCourses: app.selectedCourses.map(c => c.courseCode),
-          };
+          most = [applicantInfo];
+        } else if (totalScore === highestScore) {
+          most.push(applicantInfo);
         }
 
         if (totalScore < lowestScore) {
           lowestScore = totalScore;
-          least = {
-            name: `${app.user?.firstName} ${app.user?.lastName}`,
-            email: app.email,
-            selectedCourses: app.selectedCourses.map(c => c.courseCode),
-          };
+          least = [applicantInfo];
+        } else if (totalScore === lowestScore) {
+          least.push(applicantInfo);
         }
       });
 
@@ -557,30 +559,50 @@ const Home = () => {
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
         transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
-        whileHover={{ scale: 1.03 }}
-        className="bg-green-50 border-2 border-green-300 rounded-xl p-6 shadow-xl hover:shadow-green-900 transition-all duration-300"
+        className="bg-green-50 border-2 border-green-300 rounded-xl p-6 shadow-xl"
       >
-        <h4 className="text-lg font-bold text-green-800 text-center mb-2">Most Chosen Applicant</h4>
-        <p className="text-center text-gray-700 font-semibold text-lg">
-          {mostChosen?.name || "N/A"}
-        </p>
-        {(mostChosen?.selectedCourses ?? []).length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-4 flex flex-wrap justify-center gap-2"
-          >
-            {(mostChosen?.selectedCourses ?? []).map((c, idx) => (
-              <motion.span
+        <h4 className="text-lg font-bold text-green-800 text-center mb-4">Most Chosen Applicants</h4>
+        {(mostChosen?.length ?? 0) > 0 ? (
+          <>
+            {(showAllMost ? mostChosen : mostChosen.slice(0, 1)).map((applicant, idx) => (
+              <div
                 key={idx}
-                whileHover={{ scale: 1.1 }}
-                className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold shadow-sm"
+                className="border rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] cursor-pointer"
               >
-                {c.split(" - ")[0]}
-              </motion.span>
+                <p className="text-center text-gray-800 font-semibold text-md">{applicant.name}</p>
+                {applicant.role && (
+                  <p className="text-center text-green-700 text-sm mb-2">
+                    Role: {applicant.role.join(", ")}
+                  </p>
+                )}
+                <p className="text-center text-sm text-gray-500 mb-2">
+                  Selected for {applicant.selectedCourses?.length} course(s)
+                </p>
+                <div className="mt-2 flex flex-wrap justify-center gap-2">
+                  {applicant.selectedCourses?.map((c, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold shadow-sm"
+                    >
+                      {c.split(" - ")[0]}
+                    </span>
+                  ))}
+                </div>
+              </div>
             ))}
-          </motion.div>
+            {mostChosen.length > 1 && (
+              <div className="text-center mt-2">
+                <button
+                  onClick={() => setShowAllMost(!showAllMost)}
+                  className="text-sm text-blue-700 underline hover:text-blue-900"
+                >
+                  {showAllMost ? "Show Less" : `Show All`}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-center text-gray-500">N/A</p>
         )}
       </motion.div>
 
@@ -589,30 +611,50 @@ const Home = () => {
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
         transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
-        whileHover={{ scale: 1.03 }}
-        className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6 shadow-xl hover:shadow-yellow-900 transition-all duration-300"
+        className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6 shadow-xl"
       >
-        <h4 className="text-lg font-bold text-yellow-800 text-center mb-2">Least Chosen Applicant</h4>
-        <p className="text-center text-gray-700 font-semibold text-lg">
-          {leastChosen?.name || "N/A"}
-        </p>
-        {(leastChosen?.selectedCourses ?? []).length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-4 flex flex-wrap justify-center gap-2"
-          >
-            {(leastChosen?.selectedCourses ?? []).map((c, idx) => (
-              <motion.span
+        <h4 className="text-lg font-bold text-yellow-800 text-center mb-4">Least Chosen Applicants</h4>
+        {(leastChosen?.length ?? 0) > 0 ? (
+          <>
+            {(showAllLeast ? leastChosen : leastChosen.slice(0, 1)).map((applicant, idx) => (
+              <div
                 key={idx}
-                whileHover={{ scale: 1.1 }}
-                className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold shadow-sm"
+                className="border rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] cursor-pointer"
               >
-                {c.split(" - ")[0]}
-              </motion.span>
+                <p className="text-center text-gray-800 font-semibold text-md">{applicant.name}</p>
+                {applicant.role && (
+                  <p className="text-center text-yellow-700 text-sm mb-1">
+                    Role: {applicant.role.join(", ")}
+                  </p>
+                )}
+                <p className="text-center text-sm text-gray-500 mb-2">
+                  Selected for {applicant.selectedCourses?.length} course(s)
+                </p>
+                <div className="mt-2 flex flex-wrap justify-center gap-2">
+                  {applicant.selectedCourses?.map((c, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold shadow-sm"
+                    >
+                      {c.split(" - ")[0]}
+                    </span>
+                  ))}
+                </div>
+              </div>
             ))}
-          </motion.div>
+            {leastChosen.length > 1 && (
+              <div className="text-center mt-2">
+                <button
+                  onClick={() => setShowAllLeast(!showAllLeast)}
+                  className="text-sm text-blue-700 underline hover:text-blue-900"
+                >
+                  {showAllLeast ? "Show Less" : `Show All`}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-center text-gray-500">N/A</p>
         )}
       </motion.div>
     </div>

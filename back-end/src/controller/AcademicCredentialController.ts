@@ -3,16 +3,21 @@ import { AppDataSource } from "../data-source";
 import { AcademicCredential } from "../entity/AcademicCredential";
 import { Users } from "../entity/Users";
 
+interface CredentialInput {
+  qualification: string;
+  institution: string;
+  year: number;
+}
 export const addAcademicCredentials = async (req: Request, res: Response) => {
   try {
-    const { email, credentials} = req.body; 
+    const { email, credentials }: { email: string; credentials: CredentialInput[] } = req.body;
     const userRepo = AppDataSource.getRepository(Users);
     const credentialRepo = AppDataSource.getRepository(AcademicCredential);
   
     const user = await userRepo.findOneBy({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
   
-    const newCreds = credentials.map((cred: any) => {
+    const newCreds = credentials.map((cred) => {
       const ac = new AcademicCredential();
       ac.user = user;
       ac.qualification = cred.qualification;
@@ -24,7 +29,7 @@ export const addAcademicCredentials = async (req: Request, res: Response) => {
     await credentialRepo.save(newCreds);
     return res.status(201).json({ message: "Credentials saved" });
   } catch (err) {
-    console.error(err);
+    console.error("Error saving credentials:", err);
     return res.status(500).json({ message: "Server error" });
   }
 };
