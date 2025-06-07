@@ -8,12 +8,13 @@ import {
   Flex,
   FormControl,
   FormLabel,
+  FormErrorMessage,
 } from "@chakra-ui/react";
 import { useAuth } from "../context/Authlogic";
 import { motion, useInView } from "framer-motion";
 
 // Custom password input component with show/hide functionality
-function PasswordInput({value, onChange} : {value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>)=>void}) {
+function PasswordInput({value, onChange, isInvalid} : {value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>)=>void; isInvalid?: boolean}) {
     const [show, setShow] = useState(false); // State to toggle password visibility
     const handleClick = () => setShow(!show); // Toggle function
     return (
@@ -30,6 +31,8 @@ function PasswordInput({value, onChange} : {value: string; onChange: (e: React.C
            bg = "rgba(255,255,255,0.1)" 
            rounded = "md"
            _placeholder={{color: "rgba(255,255,255,0.6)"}}
+           isInvalid={isInvalid}
+           borderColor={isInvalid ? "red.300" : "rgba(255, 255, 255, 0.2)"}
          />
          <InputRightElement width='4.5rem'>
            <Button 
@@ -55,6 +58,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const loginRef = useRef(null);
   const isInView = useInView(loginRef, {once: true});
+  const [errors, setErrors] = useState({username: "", password:""});
 
   useEffect(() => {
     if (sessionStorage.getItem("isAdmin") === "true") {
@@ -62,8 +66,42 @@ export default function LoginPage() {
     }
   }, [router]);
 
+  //Form Validation
+  const validateForm = () =>{
+    const newErrors = {username: "", password: ""};
+    let isValid = true;
+
+    if(!username){
+      newErrors.username = "Username is required";
+      isValid = false;
+    }
+    if(!password){
+      newErrors.password = "Password is required";
+      isValid = false;
+    }
+
+    if(!username && !password){
+      newErrors.password = "Username and Password are required";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  }
+
   const handleLogin = async (e:React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setErrors({username: "", password: ""});
+
+    if(!validateForm()){
+      toast({
+        title: "Validation Error!",
+        description: "Please fill in all required fields",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      })
+    }
     setIsSubmitting(true);
     try{
     const success = await login({ username, password });
@@ -76,7 +114,15 @@ export default function LoginPage() {
         isClosable: true,
       })
       router.push("/");
-    }
+    }else{
+      toast({
+        title: "Invalid credentials",
+        description: "Only admin access is allowed. Please enter correct credentials.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }  
   }catch(error) {
       toast({
         title: "Invalid credentials",
@@ -87,6 +133,21 @@ export default function LoginPage() {
       });
     } finally{
       setIsSubmitting(false);
+    }
+  };
+
+   // Clear errors when user starts typing
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUsername(e.target.value);
+    if (errors.username) {
+      setErrors(prev => ({...prev, username: ""}));
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (errors.password) {
+      setErrors(prev => ({...prev, password: ""}));
     }
   };
 
@@ -165,12 +226,15 @@ export default function LoginPage() {
                     focusBorderColor="blue.600"
                     bg="rgba(255, 255, 255, 0.1)"
                     color="white"
-                    border="1px solid rgba(255, 255, 255, 0.2)"
+                    borderColor={errors.username ? "red.300" : "rgba(255, 255, 255, 0.2)"}
                     rounded="md"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={handleUsernameChange}
                     _placeholder={{ color: "rgba(255, 255, 255, 0.6)" }}
                       />
+                      <FormErrorMessage color="red.300">
+                      {errors.username}
+                    </FormErrorMessage>
                     </FormControl>
 
                     <FormControl isRequired>
@@ -179,8 +243,11 @@ export default function LoginPage() {
                       </FormLabel>
                       <PasswordInput
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={handlePasswordChange}
                       />
+                      <FormErrorMessage color="red.300">
+                      {errors.password}
+                    </FormErrorMessage>
                     </FormControl>
 
                    <motion.div
