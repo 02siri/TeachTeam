@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion} from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -83,7 +83,8 @@ const LecturerDashboard = () => {
   const [view, setView] = useState<"selection" | "submitted">("selection"); // Current view mode
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+// Ref for the debounce timeout
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   //Selection, ranking and comments state, indexed by applicationId
   const [selectedApplicants, setSelectedApplicants] = useState<{[id:number] : boolean}>({}); //stores selection status by applicationID
   const [rankedApplicants, setRankedApplicants] = useState<{[id:number] : number}>({}) //stores rank by applicationID
@@ -227,6 +228,15 @@ const LecturerDashboard = () => {
       setLoading(false);
     }
   },[filter, toast])
+// Debounce function
+const debouncedApplyFilters = useCallback(() => {
+    if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+        applyFilters();
+    }, 200); // 500ms debounce time
+}, [applyFilters]);
 
 const clearFilters = useCallback(()=>{
   setFilter({
@@ -272,8 +282,13 @@ const clearFilters = useCallback(()=>{
     }
 
     // Update filter state with new value
-    setFilter({
-        ...filter, [name]: value
+    setFilter((prevFilter) => {
+        const updatedFilter = { ...prevFilter, [name]: value };
+        // If it's the general search, trigger the debounced filter
+        if (name === "generalSearch") {
+            debouncedApplyFilters();
+        }
+        return updatedFilter;
     });
  };
 
@@ -295,67 +310,6 @@ const clearFilters = useCallback(()=>{
   });
  };
 
-  /**
-   * Applies current filters to the applicant list
-   * Filters by general search and checkbox filters
-   * Case-insensitive partial matching for all fields
- 
-  const filteredApplicants = applicants.filter((applicant) => {
-    const generalSearchTerm = filter.generalSearch.toLowerCase();
-    const matchesGeneralSearch = 
-    !generalSearchTerm ||
-    applicant.name.toLowerCase().includes(generalSearchTerm) ||
-    applicant.formattedCourses.some((course)=>course.toLowerCase().includes(generalSearchTerm)) ||
-    applicant.availability.toLowerCase().includes(generalSearchTerm);
-    applicant.skills.some((skill)=> skill.skillName.toLowerCase().includes(generalSearchTerm));
- 
-    const matchesCandidateName = 
-    filter.candidateName.length === 0 ||
-    filter.candidateName.some((namePart)=>applicant.name.toLowerCase().includes(namePart.toLowerCase()));
-
-    const matchesSessionType = 
-    filter.sessionType.length === 0 ||
-    filter.sessionType.some((session)=>applicant.sessionType.toLowerCase().includes(session.toLowerCase()));
-
-    const matchesAvailability = 
-    filter.availability.length === 0 ||
-    filter.availability.some((avail)=>applicant.availability.toLowerCase().includes(avail.toLowerCase()));
-
-    const matchesSkills = 
-    filter.skills.length === 0 ||
-    filter.skills.some((skillPart)=>applicant.skills.some((skill) => skill.skillName.toLowerCase().includes(skillPart.toLowerCase())));
-
-    // An applicant must match ALL active filters
-    return (
-     matchesGeneralSearch && 
-     matchesCandidateName && 
-     matchesSessionType &&
-     matchesAvailability && 
-     matchesSkills
-    );
-    // const matchesCourse = !filter.course || applicant.formattedCourses.some((course) => course.toLowerCase().includes(filter.course.toLowerCase()));
-    // const matchesName = !filter.name || applicant.name.toLowerCase().includes(filter.name.toLowerCase());
-    // const matchesAvailability = !filter.availability || applicant.availability.toLowerCase().includes(filter.availability.toLowerCase());
-    // const matchesSkill = !filter.skill || applicant.skills.some((skill)=>skill.skillName.toLowerCase().includes(filter.skill.toLowerCase()));
-
-    // // An applicant must match ALL active filters
-    // return (
-    //  matchesCourse && 
-    //  matchesName && 
-    //  matchesAvailability && 
-    //  matchesSkill
-    // );
-  });
-  */
-
-  /**
-   * Sorts the filtered applicants based on selected sort criteria
-   * Currently supports sorting by course name or availability
-   */
-  
-  /**
-   * Toggles selection state for an applicant
-   */
   const handleSelectApplicant = (applicantId: number) => {
     setSelectedApplicants((prev)=>({
       ...prev,
@@ -544,18 +498,82 @@ const handleSubmit = async () => {
         {/* Conditional rendering based on current view */}
         {view === "selection" ? (
           <>
-            <Text fontSize="4xl" fontWeight={"bold"} mb={6} color="white">
+            <Text fontSize="4xl" fontWeight={"bold"} mb={6} color="white" textAlign="center" mt={4}>
               Lecturer Dashboard
             </Text>
   
+            {applicants.length === 0 && !loading && !error ? (
+            <Box
+              position="relative"
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minH="400px"
+              mb={6}
+            >
+            <Box
+              position="relative"
+              bg="rgba(255, 255, 255, 0.1)"
+              backdropFilter="blur(20px)"
+              borderRadius="3xl"
+              border="1px solid rgba(255, 255, 255, 0.2)"
+              boxShadow="0 25px 45px rgba(0, 0, 0, 0.1)"
+              p={12}
+              textAlign="center"
+              maxW="600px"
+              w="90%"
+              _before={{
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)",
+                borderRadius: "3xl",
+                zIndex: -1,
+              }}
+              transition="all 0.2s ease-in-out"
+              _hover={{
+              bg:"blue.700",
+              color:"white",
+              boxShadow:"0 0 10px rgba(173, 216, 230, 0.6)",
+              transform: "scale(1.05)"
+              }}
+            >
+              <VStack spacing={6}>
+                <Text
+                  fontSize="3xl"
+                  fontWeight="bold"
+                  color="white"
+                  textShadow="0 2px 4px rgba(0, 0, 0, 0.3)"
+                  letterSpacing="wide"
+                >
+                  No Applications Available
+                </Text>
+            <Text
+              fontSize="lg"
+              color="rgba(255, 255, 255, 0.8)"
+              textShadow="0 1px 2px rgba(0, 0, 0, 0.2)"
+              maxW="400px"
+              lineHeight="1.6"
+            >
+              There are currently no tutor applications to review. Please check back later or contact administration.
+            </Text>
+            
+        
+      </VStack>
+    </Box>
+  </Box>
+            ): (
+            <>
             {/* Filters Section */}
             <Box bg="white" p={6} rounded="2xl" boxShadow="lg" mb={6}>
             <VStack spacing={6} align="stretch">
-              
+              <HStack spacing = {4}>
               {/* General Search Input */}
               <Input 
                 name="generalSearch" 
-                color = "blue.700" 
                 placeholder="Search by Tutor Name, Course, Availability or Skills" 
                 value={filter.generalSearch}
                 onChange={handleFilterChange} 
@@ -563,7 +581,10 @@ const handleSubmit = async () => {
                   borderColor: "blue.500",
                   outline: "1px blue",
                 }}
+                _placeholder={{color:"gray.700"}}
               />
+              </HStack>
+
 
               {/* Display input validation errors */}
               {inputErrors.name && (
@@ -583,7 +604,7 @@ const handleSubmit = async () => {
               <AccordionItem>
                 <h2>
                   <AccordionButton>
-                    <Box flex="1" textAlign="left" fontWeight="bold">
+                    <Box flex="1" textAlign="left" textColor="gray.700" >
                      Apply Filters 
                     </Box>
                     <AccordionIcon/>
@@ -895,8 +916,9 @@ const handleSubmit = async () => {
             </Table>
             </TableContainer>
             </Box>
-            
           </>
+        )}
+        </>
         ) : (
           <>
             {/* Submitted Data View */}

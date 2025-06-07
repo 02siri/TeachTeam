@@ -136,10 +136,14 @@ async fetchUserByEmail(request: Request, response: Response){
     }
     
     try{
-      const user = await this.usersRepository.findOne({
-        where: {email : request.params.email},
-        relations : ["applications", "skills", "credentials"],
-    });
+          const relations = email.includes('@student.rmit.edu.au') 
+      ? ["applications", "skills", "credentials"]
+      : ["assignedCourses", "skills", "credentials"];
+
+    const user = await this.usersRepository.findOne({
+      where: {email: request.params.email},
+      relations: relations,
+    });;
       if(user){
         const {password, ...protectedUser} = user;
         return response.status(200).json(protectedUser);
