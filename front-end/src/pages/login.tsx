@@ -308,7 +308,7 @@ export default function LoginPage(){
             </motion.div>
              {/* Animated LordIcon */}
             <Box
-                mt={8}
+                mt={1}
                 display="flex"
                 justifyContent="center"
                 alignItems="center"
@@ -320,7 +320,7 @@ export default function LoginPage(){
                     delay="200"
                     state="in-reveal"
                     colors="primary:#66a1ee,secondary:#242424"
-                    style="width:200px;height:200px">
+                    style="width:250px;height:230px">
                     </lord-icon>
                 `,
                 }}

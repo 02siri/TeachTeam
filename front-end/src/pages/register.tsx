@@ -8,7 +8,7 @@ import Header from "@/components/Header";
 import { AxiosError } from "axios";
 import Image from "next/image";
 import Link from "next/link";
-// import Head from "next/head";
+import Head from "next/head";
 // import { script } from "framer-motion/m";
 
 function PasswordInput({value, onChange} : {value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>)=>void}) {
@@ -188,9 +188,13 @@ if(!hasErrors){
         const handleQuoteHover = () => {
             setQuoteIndex((prev)=>(prev+1)%quotes.length);
         };
-
+        
   return (
         <>
+        <Head>
+        {/* LordIcon library for animated icons */}
+        <script src="https://cdn.lordicon.com/lordicon.js" async defer></script>
+        </Head>
         <Header />
 
         {/* Full Screen Motion Container with initial fade-in animation */}
@@ -203,7 +207,7 @@ if(!hasErrors){
 
         {/* Background image for the login page */}
         <Image
-        src="/loginBG.jpg"
+        src="/registerBG.jpg"
         alt="Background"
         fill
         className="object-cover z-0"
@@ -249,24 +253,22 @@ if(!hasErrors){
                 <Text fontSize="md" opacity={0.6} mt={4}>Hover to inspire ✨</Text>
             </motion.div>
              {/* Animated LordIcon */}
-            {/* <Box
-                mt={8}
+            <Box
+                mt={16}
                 display="flex"
-                justifyContent="center"
-                alignItems="center"
                 dangerouslySetInnerHTML={{
                 __html: `
                     <lord-icon
-                    src="https://cdn.lordicon.com/aksvbzmu.json"
-                    trigger="in"
-                    delay="200"
-                    state="in-reveal"
-                    colors="primary:#66a1ee,secondary:#242424"
-                    style="width:200px;height:200px">
-                    </lord-icon>
+                      src="https://cdn.lordicon.com/wyaqzesp.json"
+                      trigger="in"
+                      delay="200"
+                      state="in-reveal"
+                      colors="primary:#66a1ee,secondary:#242424"
+                      style="width:250px;height:250px">
+                  </lord-icon>
                 `,
                 }}
-            /> */}
+            />
             </Box>
             </Box>
 
