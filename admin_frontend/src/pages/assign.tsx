@@ -24,7 +24,7 @@ import {
 } from "@chakra-ui/react";
 import { useQuery, useMutation, gql, FetchResult} from "@apollo/client";
 
-//GraphQL queries and mutations
+//GraphQL queries fetching lecturers and courses
 const GET_LECTURERS_AND_COURSES = gql `
 query GetLectAndCourses{
     getLecturers{
@@ -46,7 +46,7 @@ query GetLectAndCourses{
 }
 `;
 
-
+//Graphlql mutation for assigning courses to lecturers
 const ASSIGN_LECTURER = gql `
 mutation AssignLect($userId: ID!, $courseIds: [ID!]!){
     assignLectToCourses(userId: $userId, courseIds: $courseIds)
@@ -77,16 +77,20 @@ interface QueryData{
 export default function AssignLect(){
     //Apollo client hooks for data fetching and mutations
     const {data, loading, error, refetch} = useQuery<QueryData>(GET_LECTURERS_AND_COURSES);
+    //mutation function to assign courses to lecturers
     const [assignLect] = useMutation<QueryData>(ASSIGN_LECTURER);
+    //state to manage current view
     const [view, setView] = useState<'list' | 'edit'>('list');
+    //state to store selected courses for each lecturer : storing as a Record of key-value pair
     const [selectedCourses, setSelectedCourses] = useState<Record<number, Set<number>>>({});
     const toast = useToast();
     
+    //Memoized lecturers and courses data from query reult
     const lecturers = useMemo(()=> data?.getLecturers || [], [data?.getLecturers]);
     const courses = useMemo(()=> data?.getCourses || [], [data?.getCourses]);
 
     
-    //Initialize selected courses when data loads/lecturers change
+    //Initialize/Restore selected courses when data loads/lecturers change
     useEffect(()=>{
         if (data){
          const initialSelections : Record<number, Set<number>> = {};
@@ -97,14 +101,18 @@ export default function AssignLect(){
         }
     },[data, lecturers]);
 
+    //handler to swtich to edit view
     const handleSelectCourses = () => {
         setView('edit');
     }
 
+    //handler for toggline the selection of course for specific lecturer
     const handleCourseToggle = (lectId: number, courseId: number) =>{
         setSelectedCourses((prev)=>{
+            //create new set from previous selections
             const updated = new Set(prev[lectId] || []);
             
+            //if the course is already in the Set, remove it or vice-versa
             if(updated.has(courseId)){
                 updated.delete(courseId);
             }else{
@@ -117,20 +125,25 @@ export default function AssignLect(){
         });
     };
 
+    //handler to perform assign courses mutation
     const handleAssign = async() =>{
+        //array to hold promises of assign mutation
         const assignToDo: Promise<FetchResult<QueryData>>[] = [];
+        //array to hold lecturers with no courses assigned
         const lectWithNoAssign : User[]= [];
 
         lecturers.forEach(lect=>{
             const coursesForLect = Array.from(selectedCourses[lect.id] || []);
             if(coursesForLect.length<1){
+                //if no courses are selected, move lecturer to the no assign list
                 lectWithNoAssign.push(lect);
             }else{
+                //else add it to the promise array
                 assignToDo.push(
                     assignLect({variables: {userId: lect.id, courseIds: coursesForLect}}))
             }
         });
-
+        //show toast error for lect with no assignments of courses
         if(lectWithNoAssign.length>0){
            toast({
             title: "Assignment Error",
@@ -164,6 +177,7 @@ export default function AssignLect(){
         }
     };
 
+    //handler to go back to the list view
     const handleBack = () =>{
         setView('list');
         //Re-initialize selectedCourses to reflect current assignments if user goes back
@@ -174,12 +188,14 @@ export default function AssignLect(){
          setSelectedCourses(initialSelections);
     };
 
+    //helper to display assigned courses for the lecturers
     const DisplayAssignedCourses = (lecturer: User) => {
         const assignedCourses = lecturer.assignedCourses
-        .map(ac=>courses.find(c=>c.courseID === ac.courseID))
-        .filter(Boolean)
-        .map(c=> `${c!.courseCode} ${c?.courseName} (Sem ${c?.semester})`);
+        .map(ac=>courses.find(c=>c.courseID === ac.courseID))    //map assigned courses' IDs to course objects 
+        .filter(Boolean) //and filter any undefined values if course not found
+        .map(c=> `${c!.courseCode} ${c?.courseName} (Sem ${c?.semester})`); //format string for course display
 
+        //render either list of assigned courses or 'No Courses Assigned'
         return assignedCourses.length > 0 ? 
         (<VStack align="center" spacing={1}>
             {assignedCourses.map((course, index)=>(
@@ -191,7 +207,7 @@ export default function AssignLect(){
         ):(<Text fontSize="sm" color="gray.300">No Courses Assigned</Text>);
     };
 
-
+    //Display loading/error messages
     if(loading)
         return (
     <Flex bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={16} justify="center" align="center">
@@ -207,6 +223,7 @@ export default function AssignLect(){
     </Flex>
     );
 
+    //redner 'list' view
     if(view==='list'){
         return(
             <Box bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={20}>
@@ -293,7 +310,7 @@ export default function AssignLect(){
         );
     }
 
-
+//render 'edit' view
     return(
        <Box bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={16}>
         <Box maxW="9xl" mx="auto">
