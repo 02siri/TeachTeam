@@ -3,12 +3,10 @@ import { AppDataSource } from "../data-source";
 import { Application } from "../entity/Application";
 import { Users } from "../entity/Users";
 import { Course } from "../entity/Course";
-import { Any, In, Like } from "typeorm";
+import {In} from "typeorm";
 import { Skills } from "../entity/Skills";
 import { AcademicCredential } from "../entity/AcademicCredential";
 import { normalizeSkills } from "../services/skillService";
-import session from "express-session";
-import { Subject } from "typeorm/persistence/Subject";
 
 export class ApplicationController {
   static async createApplication(req: Request, res: Response) {
@@ -171,6 +169,9 @@ export class ApplicationController {
       //Apply general search - searches accross candidate name, avaialability, skills and courses
       if (generalSearch && typeof generalSearch === 'string') {
       const searchTerm = generalSearch.trim().toLowerCase();
+      if(!/^[A-Za-z0-9\s]*$/.test(searchTerm)){
+        return res.status(400).json({error: "General Search term contains invalid characters."})
+      }
       queryBuilder.andWhere(`(
         LOWER(user.firstName) LIKE :generalSearch OR 
         LOWER(user.lastName) LIKE :generalSearch OR 
@@ -281,8 +282,21 @@ export class ApplicationController {
         });
         }
       }
-
+      
       //updating lecturer-specific fields
+      if(isSelected !== undefined){
+        application.isSelected = isSelected;
+
+        if(isSelected){
+          if(!selectedCourseIds || selectedCourseIds.length === 0){
+            return res.status(400).json({
+              error: "At least one course must be selected"
+            });
+          }
+        }
+        
+      }
+
       if(rank!==undefined){
         application.rank = rank;
       }
@@ -314,11 +328,11 @@ export class ApplicationController {
         })
 
         application.selectedCourses = coursesToSelect;
-        application.isSelected = true;
+        
        
        } else if(selectedCourseIds === null || selectedCourseIds === undefined){
         application.selectedCourses = [];
-        application.isSelected = false;
+        
        }
 
        await appRepo.save(application);

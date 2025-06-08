@@ -18,7 +18,6 @@ export function AuthProvider(
     {children}:{children:React.ReactNode}
 ){
 
-
    //initial state -> null
     const [currentUserEmail , setCurrentUserEmail] = useState< string | null >(
         //Check if we are running in a browser environment. 
@@ -48,9 +47,6 @@ export function AuthProvider(
             console.log("Login response: ", response);
 
             if(response.user && response.user.email && response.user.username){
-                // if(response.user.isBlocked){
-                //     throw new Error("Your account has been blocked. Please contact support.")
-                // }
                 sessionStorage.setItem("CurrentUserEmail", response.user.email);
                 sessionStorage.setItem("CurrentUsername", response.user.username);
                 setCurrentUserEmail(response.user.email);

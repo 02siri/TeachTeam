@@ -31,7 +31,7 @@ import {
 import {tutorApi, Tutor} from "../services/api";
 
 /**
- * Extended applicant interface to combine tutor details for frontend
+ * Extended applicant interface to combine tutor details for frontend display.
  */
 interface DisplayApplicant extends Tutor{
   name: string;
@@ -42,6 +42,7 @@ interface DisplayApplicant extends Tutor{
 // Create a motion-enabled Box component using Framer Motion for animations
 const MotionBox = motion(Box);
 
+//capializes the first letter of each word in a string
 const capitalizeWords = (str: string): string => {
   return str.replace(/\b\w/g, (char) => char.toUpperCase());
 }
@@ -51,25 +52,26 @@ const capitalizeWords = (str: string): string => {
  * 
  * This dashboard allows lecturers to:
  * - View all tutor applicants
- * - Filter and sort applicants
+ * - Search, Filter and sort applicants
  * - Select applicants for courses
  * - Rank applicants by preference
  * - Add comments to applications
  * - Submit final selections
  */
 const LecturerDashboard = () => {
+  //hook for displaying toast notifications
   const toast = useToast();
 
   // Main state management
   const [applicants, setApplicants] = useState<DisplayApplicant[]>([]); // All applicants in the system
-  const [filteredApplicants, setFilteredApplicants] = useState<DisplayApplicant[]>([]);
+  const [filteredApplicants, setFilteredApplicants] = useState<DisplayApplicant[]>([]);//Stores applicants after applying filters
  const [rankErrors, setRankErrors] = useState<{ [key: string]: string }>({}); // Error messages for invalid rankings
   const [inputErrors, setInputErrors] = useState<{ name?: string }>({}); // Validation errors for input fields
   
   // 
   // Filter and sort state
   const [filter, setFilter] = useState({
-    generalSearch: "",
+    generalSearch: "", //general search term accross multiple fields
     //For checkbox filters:
     sessionType: [] as string[],
     candidateName: [] as string[],
@@ -81,9 +83,10 @@ const LecturerDashboard = () => {
   // UI state controls
   const [isSelecting, setIsSelecting] = useState(false); // Whether in selection mode
   const [view, setView] = useState<"selection" | "submitted">("selection"); // Current view mode
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-// Ref for the debounce timeout
+  const [loading, setLoading] = useState(false);//if data is currently loading or submitted
+  const [error, setError] = useState<string | null>(null);//error messages for fetching data
+
+// Ref for the debounce timeout, to delay filter application
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   //Selection, ranking and comments state, indexed by applicationId
   const [selectedApplicants, setSelectedApplicants] = useState<{[id:number] : boolean}>({}); //stores selection status by applicationID
@@ -109,7 +112,10 @@ const LecturerDashboard = () => {
   
   const fetchAllApplications = useCallback(async() => {
       try{
-        const applications = await tutorApi.getAllApplications();
+        setLoading(true); //set Loading state to true
+        const applications = await tutorApi.getAllApplications(); //call API to get all applications
+        
+        //format fetched applications 
         const formattedApplications : DisplayApplicant[] =applications.map((app: Tutor) => {
           const name = app.user ? `${app.user.firstName} ${app.user.lastName}` : "N/A";
           const academicCred = app.user ? formatAcadCred(app.academicCredentials) : "No Academic Credentials";
@@ -122,7 +128,9 @@ const LecturerDashboard = () => {
           };
         });
 
+        
         setApplicants(formattedApplications);
+        //initially, filtered applicants are set to all applicants 
         setFilteredApplicants(formattedApplications);
 
         //initialize/restore selection, rank and comments from fetched data
@@ -170,9 +178,14 @@ const LecturerDashboard = () => {
       }
     } , [toast]);
 
+    /** 
+     * Applies filters based on current filter state by c alling backedn API
+     * Memoized wiht useCallback to prevent unnecessary recreations 
+     */
   const applyFilters = useCallback(async()=>{
     try{
       setLoading(true);
+      //Define parameters for the API call
       const params:{
           candidateName ?: string;
           sessionType ?: string;
@@ -200,8 +213,10 @@ const LecturerDashboard = () => {
           params.skills = filter.skills.join(",");
         }
 
+        //call API with filter parameters
         const applications = await tutorApi.getFilteredApplications(params);
 
+        //Format filtered applications
         const formattedApplications : DisplayApplicant[] =applications.map((app: Tutor) => {
           const name = app.user ? `${app.user.firstName} ${app.user.lastName}` : "N/A";
           const academicCred = app.user ? formatAcadCred(app.academicCredentials) : "No Academic Credentials";
@@ -228,17 +243,29 @@ const LecturerDashboard = () => {
       setLoading(false);
     }
   },[filter, toast])
-// Debounce function
+
+/**
+ * Debounce function to apply filters
+ * Ensures the applyFilter API call is not made too frequently while typing in search bar
+ * When a user is typing in the search bar, each key release triggers the debounce again.
+ * Every invocation first resets/clears the previous timer, and sets a new timer (200ms here) 
+ * for the function call. 
+ * Basically, this goes on as long as the user keeps hitting the keys under 200ms 
+ *  - and when finally the user pauses typing form ore than 200ms, the applyFilters function is called. 
+ * */ 
 const debouncedApplyFilters = useCallback(() => {
     if (searchTimeoutRef.current) {
+      //Clear previous timeout if exists
         clearTimeout(searchTimeoutRef.current);
     }
     searchTimeoutRef.current = setTimeout(() => {
-        applyFilters();
-    }, 200); // 500ms debounce time
+        applyFilters(); //call applyFilters after 
+    }, 200); // 200ms debounce time(delay)
 }, [applyFilters]);
 
+/** Clears all filters and re-fetches all applications */
 const clearFilters = useCallback(()=>{
+  //Reset filter state to initial empty values
   setFilter({
     generalSearch: "",
     sessionType: [],
@@ -246,8 +273,8 @@ const clearFilters = useCallback(()=>{
     availability: [],
     skills: []
   });
-  fetchAllApplications();
-  setInputErrors({});
+  fetchAllApplications();//Re-fetch all applications
+  setInputErrors({});//clear any input errors
 },[fetchAllApplications]);
 
 //load applicant data on component mount
@@ -256,12 +283,12 @@ const clearFilters = useCallback(()=>{
   },[fetchAllApplications]);
   
   /**
-   * Handles changes to filter input fields : general search 
+   * Handles changes to filter input/select fields
    * Validates input and updates filter state
    */
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const isValid = /^[A-Za-z0-9\s]*$/.test(value); // Regex to allow only letters and spaces
+    const isValid = /^[A-Za-z0-9\s]*$/.test(value); // Regex to allow only letters, numbers and spaces
 
     // Validate filter inputs to prevent injection or invalid searches
     if (name === "generalSearch") {
@@ -292,28 +319,32 @@ const clearFilters = useCallback(()=>{
     });
  };
 
- /** Handles changes to filter input fieldsand checkbox filters) **/
+ /**
+  * Handles changes to checkbox filters 
+  * Adds or removes a value from the respective filter category array
+  * */
  const handleCheckboxFilterChange =(category: keyof typeof filter, value: string, checked: boolean) =>{
   setFilter((prev)=>{
     const currentValues = prev[category] as string[];
     if(checked){
       return{
         ...prev,
-        [category] : [...currentValues, value],
+        [category] : [...currentValues, value], //Add value if checked
       };
     }else{
       return{
         ...prev,
-        [category] : currentValues.filter((item)=>item!==value),
+        [category] : currentValues.filter((item)=>item!==value), //Remove value if unchecked
       };
     }
   });
  };
 
+ /**Toggles selection of an applicant */
   const handleSelectApplicant = (applicantId: number) => {
     setSelectedApplicants((prev)=>({
       ...prev,
-      [applicantId] : !prev[applicantId],
+      [applicantId] : !prev[applicantId], //Toggle boolean status
     }))
   };
   
@@ -325,9 +356,10 @@ const clearFilters = useCallback(()=>{
     const validRank = Math.max(0,rank); // Ensure rank is not negative
     setRankedApplicants((prev) => ({
         ...prev,
-        [applicantId] : validRank,
+        [applicantId] : validRank,//update rank for the given applicant
     }));
 
+    //clear any previous rank-specfic error 
     setRankErrors((prev) => {
       const updated = {...prev};
       delete updated[applicantId];
@@ -341,37 +373,68 @@ const clearFilters = useCallback(()=>{
   const handleCommentChange = (applicantId: number, comment: string) => {
     setComments({
       ...comments,
-      [applicantId]: comment,
+      [applicantId]: comment, //updating the comments for that applicant
     });
   };
 
   /**
    * Toggles course selection for an applicant
-   * Either adds or removes a course from the selected courses list
+   * Either adds or removes a course from the selected courses list - for a specific applicant
    */
   const handleCourseToggle = (applicantId: number, courseID:number) =>{
     setCourseSelections((prev)=>{
-      const selectedCourses = prev[applicantId] || [];
+      const selectedCourses = prev[applicantId] || []; //Get current selected courses for this applicant 
       const updatedCourses = selectedCourses.includes(courseID)
         ? selectedCourses.filter((id)=> id!==courseID) // Remove course if already selected
         : [...selectedCourses, courseID]; // Add course if not selected
 
+        //clear specfic course-related error for this applicant if courses are being selected 
+        if(updatedCourses.length>0){
+          setRankErrors((prevErrors)=>{
+            const newErrors = {...prevErrors};
+            if(newErrors[applicantId] && newErrors[applicantId].includes("course")){
+              delete newErrors[applicantId];
+            }
+            return newErrors;
+          })
+        }
       return {
         ...prev,
-        [applicantId]:updatedCourses
+        [applicantId]:updatedCourses //update selected courses for this applicant
       }
     });
   };
 
   /**
    * Handles final submission of selected applicants
-   * Validates ranks and sends updates to backend
+   * Validates ranks & selected Courses, and sends updates to backend
    */
 const handleSubmit = async () => {
 
-  const newRankErrors: {[key: number] : string} = {}; //use number for keys
-  const applicantsToSubmit = applicants.filter(applicant => selectedApplicants[applicant.applicationId]);
+  const newRankErrors: {[key: number] : string} = {}; //Object to store validation errors for rranks & courses
+  //Get all applicants that are currently in filteredApplicants state
+  const allApplicantsToProcess = filteredApplicants;
 
+  //check if any courses are selected for an applicant that is not selected itself.
+  let coursesSelectedWithoutApplicant = false;
+  for(const applicant of allApplicantsToProcess){
+    const selectedCourses = courseSelections[applicant.applicationId] || [];
+    if(selectedCourses.length > 0 && !selectedApplicants[applicant.applicationId]){
+      coursesSelectedWithoutApplicant = true;
+      toast({
+        title: "Selection Error",
+        description: `Please select ${applicant.name} before submitting.`,
+        status: "error",
+        duration: 5000,
+        isClosable:true,
+      });
+      return;
+    }
+  }
+  //separate selectedApplicants for rank/course validations
+  const applicantsToSubmit = allApplicantsToProcess.filter(applicant => selectedApplicants[applicant.applicationId]);
+
+  //check if any applicant is selected for submission
     if(applicantsToSubmit.length === 0){
       toast({
         title: "No Applicant Selected",
@@ -383,7 +446,7 @@ const handleSubmit = async () => {
       return;
     }
 
-    //Now, iterate directly over applicants to submit
+    //Now, iterate directly over each chosen applicant to validate that at least one course is selected
     applicantsToSubmit.forEach((app) => {
       const selectedCourses = courseSelections[app.applicationId] || [];
       if(selectedCourses.length === 0){ 
@@ -391,21 +454,21 @@ const handleSubmit = async () => {
       }
     })
     
-     //check for duplicate ranks
+     //check for duplicate ranks among selected applicants
     const  ranksInUse: {[rank:number] : number[]} = {};
     applicantsToSubmit.forEach((app) => {
       const rank = rankedApplicants[app.applicationId];
 
-      if(rank!==undefined && rank!==null){
+      if(rank!==undefined && rank!==null){ //if a rank is assigned
         if(ranksInUse[rank]){
-          ranksInUse[rank].push(app.applicationId);
+          ranksInUse[rank].push(app.applicationId); //Add applicant to the list for this rank
         }else{
-          ranksInUse[rank] = [app.applicationId]
+          ranksInUse[rank] = [app.applicationId]//Initialize list for this rank
         }
       }
     });
 
-   
+   //Add error messages for duplicate ranks
     for(const rank in ranksInUse){
       if(ranksInUse[rank].length>1){
         ranksInUse[rank].forEach((id) => {
@@ -414,8 +477,9 @@ const handleSubmit = async () => {
       }
     }
 
+    //Display toast for validation errors
     if(Object.keys(newRankErrors).length>0){
-      setRankErrors(newRankErrors);
+      setRankErrors(newRankErrors); //Update state with all validation errors
       toast({
         title: "Validation Error",
         description: "Please resolve all validation errors before submitting",
@@ -425,23 +489,46 @@ const handleSubmit = async () => {
       });
       return;
     } else{
-      setRankErrors({});
+      setRankErrors({}); //clear all rank errors if no issues
     }
 
     try{
       setLoading(true);
-      const updatedApplications = applicantsToSubmit.map(async(app) => {
+      const updatePromises = allApplicantsToProcess.map(async (app)=>{
+        const isCurrentlySelected = !!selectedApplicants[app.applicationId];
+        let statusToSet : "approved" | "rejected" | "pending" = "pending"; //Pending by default
+
+        if(isCurrentlySelected){
+          statusToSet = "approved";
+        }else if(app.isSelected){
+          //if previously selected but now deselected
+          statusToSet = "rejected";
+        }else{
+          statusToSet = "pending"
+        }
+      
+      
         const updateDetails = {
-          rank: rankedApplicants[app.applicationId] ?? null,
-          comments: comments[app.applicationId] ?? null,
-          selectedCourseIDs : courseSelections[app.applicationId] ?? [],
-          status: "approved" as "approved" | "rejected",
-          isSelected: true,
+          rank: isCurrentlySelected ? (rankedApplicants[app.applicationId] ?? null) : null, //Get rank or null
+          comments: isCurrentlySelected ? (comments[app.applicationId] ?? null) : null, //Get comments or null
+          selectedCourseIDs : isCurrentlySelected? (courseSelections[app.applicationId] ?? []) : [], //Get selected course IDs or empty array
+          status: statusToSet,
+          isSelected: isCurrentlySelected,
         };
 
+        //only send update if there is a change
+        const hasChanges = 
+        app.isSelected !== updateDetails.isSelected || 
+        app.status !== updateDetails.status || 
+        app.rank !== updateDetails.rank || 
+        app.comments !== updateDetails.comments ||
+        JSON.stringify(app.selectedCourses.map(c=>c.courseID).sort()) !== JSON.stringify(updateDetails.selectedCourseIDs.sort());
+
+        if(hasChanges){
         //call backend API to update the application
         await tutorApi.updateApplicationByLecturer(app.applicationId, updateDetails);
-
+        }
+       
         //Return full applicant object with updated fields for local state
         return{
           ...app,
@@ -450,10 +537,13 @@ const handleSubmit = async () => {
         };
       });
 
-      const successfulUpdation = await Promise.all(updatedApplications);
-      
+      const successfulUpdation = await Promise.all(updatePromises);
+      //Filter for truly submitted applications for the 'submitted' view
+      const newlySubmitted = successfulUpdation.filter(app => app.isSelected && app.status==="approved");
       //set submitted data and switch to 'submitted' view
-      setSubmittedData(successfulUpdation);
+      setSubmittedData(newlySubmitted);
+      //Refetch all applications to ensure the local state is fully synchronized with backend
+      await fetchAllApplications();
       setView("submitted");
 
       toast({
