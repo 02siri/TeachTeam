@@ -416,11 +416,9 @@ const handleSubmit = async () => {
   const allApplicantsToProcess = filteredApplicants;
 
   //check if any courses are selected for an applicant that is not selected itself.
-  let coursesSelectedWithoutApplicant = false;
   for(const applicant of allApplicantsToProcess){
     const selectedCourses = courseSelections[applicant.applicationId] || [];
     if(selectedCourses.length > 0 && !selectedApplicants[applicant.applicationId]){
-      coursesSelectedWithoutApplicant = true;
       toast({
         title: "Selection Error",
         description: `Please select ${applicant.name} before submitting.`,
