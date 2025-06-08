@@ -52,11 +52,11 @@ describe('ApplicationController', () => {
 
 
 
-  //test invalid previous role format...
+  //test invalid previous role format... previousRoles(should be array, but string is what is provided)...
   it('should return 400 for invalid previousRoles format', async () => {
     const res = await request(app).post('/applications').send({
       email: "john@student.rmit.edu.au",
-      previousRoles: "Not an array",
+      previousRoles: "Not an array",  //invalid format...
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Invalid previousRoles format/);
@@ -69,11 +69,11 @@ describe('ApplicationController', () => {
   //no matching course are found in the backend... 
   it('should return 404 if no matching courses are found', async () => {
     mockUserRepo.findOneByOrFail.mockResolvedValue({ id: 1, email: 'john@student.rmit.edu.au' });
-    mockCourseRepo.find.mockResolvedValue([]);
+    mockCourseRepo.find.mockResolvedValue([]);         //no matching courses found...
     const res = await request(app).post('/applications').send({
       email: "john@student.rmit.edu.au",
       role: ["Tutor"],
-      courses: ["COSC9999"],
+      courses: ["COSC9999"],     //invalid course code...
       previousRoles: [],
       availability: "morning",
       skills: [],
@@ -92,7 +92,7 @@ describe('ApplicationController', () => {
   it('should create application successfully with valid data', async () => {
     mockUserRepo.findOneByOrFail.mockResolvedValue({ id: 1, email: 'sruthy@student.rmit.edu.au' });
     mockCourseRepo.find.mockResolvedValue([{ courseCode: "COSC2758" }]);
-    mockAppRepo.create.mockImplementation((data) => data);
+    mockAppRepo.create.mockImplementation((data) => data);       
     mockAppRepo.save.mockImplementation((data) => ({ ...data, applicationId: 1 }));
     const res = await request(app).post('/applications').send({
       email: "sruthy@student.rmit.edu.au",
@@ -113,7 +113,7 @@ describe('ApplicationController', () => {
 
 
 
-  //test create application with missing email...
+  //get all applications endpointss...
   it('should return 200 and list all applications', async () => {
     mockAppRepo.find.mockResolvedValue([{ applicationId: 1, user: { email: "a@rmit.edu.au" } }]);
     const res = await request(app).get('/applications');

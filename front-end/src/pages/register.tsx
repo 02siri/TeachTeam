@@ -223,7 +223,7 @@ if(!hasErrors){
             initial = {{ opacity: 0, y: 50}}
             animate ={isInView? {opacity: 1, y: 0} : {}}
             transition = {{duration: 1, ease: "easeOut"}}
-            className="relative z-10 p-10 rounded-2xl shadow-2xl w-full max-w-4xl bg-white backdrop-blur-md text-white"
+            className="relative mt-20 mb-8 z-10 p-10 rounded-2xl shadow-2xl w-full max-w-4xl bg-white backdrop-blur-md text-white"
         >
 
          {/* Responsive layout with column direction on mobile, row on desktop */}

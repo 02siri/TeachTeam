@@ -53,7 +53,7 @@ describe("UsersController - createUser", () => {
       firstName: "Mark",
       lastName: "Smith",
       username: "marksmith",
-      email: "mark@gmail.com",
+      email: "mark@gmail.com",   //invalid email format..
       password: "Password123!",
     });
     expect(res.status).toBe(400);
@@ -63,14 +63,14 @@ describe("UsersController - createUser", () => {
 
 
 
-    //weak password...
+    //weak password... like when password does not meet complexity/legth requirements..
   it("should return 400 for weak password", async () => {
     const res = await request(app).post('/users').send({
       firstName: "David",
       lastName: "Smith",
       username: "davidsmith",
       email: "david@student.rmit.edu.au",
-      password: "short",
+      password: "short",     //this is too short.... so its a weak password..
     });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/Password must have atleast 10 characters/);
@@ -89,6 +89,7 @@ describe("UsersController - createUser", () => {
       email: "sruthy@student.rmit.edu.au",
       password: "Secure@12345",
     };
+    //using the existing user found in database...
     mockRepo.findOneBy.mockResolvedValueOnce({ email: userData.email });
     const res = await request(app).post('/users').send(userData);
     expect(res.status).toBe(409);
@@ -99,7 +100,7 @@ describe("UsersController - createUser", () => {
 
 
 
-  //valid user creation....
+  //valid user creation.... like all fields are valid and user is successfully created..
   it("should return 201 when a valid user is created", async () => {
     const userData = {
       firstName: "Anna",
@@ -108,7 +109,9 @@ describe("UsersController - createUser", () => {
       email: "anna@student.rmit.edu.au",
       password: "Valid@12345",
     };
+    //no existing user..
     mockRepo.findOneBy.mockResolvedValueOnce(null);
+    //saving the user and returning new user object..
     mockRepo.save.mockResolvedValueOnce({
       ...userData,
       password: undefined,
@@ -117,6 +120,6 @@ describe("UsersController - createUser", () => {
     const res = await request(app).post('/users').send(userData);
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("email", "anna@student.rmit.edu.au");
-    expect(res.body).not.toHaveProperty("password");
+    expect(res.body).not.toHaveProperty("password");  
   });
 });
