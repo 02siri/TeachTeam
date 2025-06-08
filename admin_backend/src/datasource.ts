@@ -11,9 +11,9 @@ export const AppDataSource = new DataSource({
   type: "mysql",
   host: "209.38.26.237",
   port: 3306,
-  username: "S3959795", //S3959795 S3988110
-  password: "srishMySql11", //srishMySql11 Dream@123
-  database: "S3959795",
+  username: "", 
+  password: "", 
+  database: "",
   synchronize: true,
   logging: true,
   entities: [Users, Course, AcademicCredential, Application, Skills],

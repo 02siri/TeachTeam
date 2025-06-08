@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useMemo} from "react";
 import {
     Box,
     Button,
@@ -82,8 +82,8 @@ export default function AssignLect(){
     const [selectedCourses, setSelectedCourses] = useState<Record<number, Set<number>>>({});
     const toast = useToast();
     
-    const lecturers : User[] = data?.getLecturers || [];
-    const courses: Course[] = data?.getCourses || [];
+    const lecturers = useMemo(()=> data?.getLecturers || [], [data?.getLecturers]);
+    const courses = useMemo(()=> data?.getCourses || [], [data?.getCourses]);
 
     
     //Initialize selected courses when data loads/lecturers change

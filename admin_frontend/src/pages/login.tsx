@@ -124,6 +124,7 @@ export default function LoginPage() {
       });
     }  
   }catch(error) {
+    console.log(error);
       toast({
         title: "Invalid credentials",
         description: "Only admin access is allowed. Please enter correct credentials.",
