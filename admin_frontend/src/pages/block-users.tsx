@@ -18,6 +18,7 @@ import {
     CardBody
 } from "@chakra-ui/react";
 
+//Graphql query to fetch all users
 const GET_ALL_USERS = gql `
 query GetAllUsers{
  getAllUsers{
@@ -31,6 +32,7 @@ query GetAllUsers{
 }
 `;
 
+//Graphql mutation to block/unblock a user
 const BLOCK_USER = gql`
 mutation BlockUsers($userId: ID!, $isBlocked: Boolean!){
     blockUsers(userId: $userId, isBlocked: $isBlocked)
@@ -46,22 +48,29 @@ interface User{
     dateOfJoining: string;
 }
 
+//component for blocking/unblocking users
 const BlockUsers : React.FC = () => {
+    //useQuery hook to perofmr query of fetching all users
     const {loading, error, data, refetch} = useQuery(GET_ALL_USERS);
+    //useMutation hook to perform the block user mutation
     const [blockUser] = useMutation(BLOCK_USER);
     const toast = useToast();
 
+    //handler for toggling a user's blocked status
     const handleToggleBlock = async(userId: number, currentStatus: boolean)=>{
         try{
+            //execue block user mutation using the userID and blocked status
             await blockUser({
                 variables: {userId: userId, isBlocked: !currentStatus},
             });
+            //display toast based on the status
             toast({
                 title: currentStatus? "User Unblocked" : "User Blocked",
                 status: currentStatus ? "info" : "warning",
                 duration: 3000,
                 isClosable: true,
             })
+            //refetch the user data to update ui with new status
             refetch();
             
         }catch(error){
@@ -76,11 +85,12 @@ const BlockUsers : React.FC = () => {
         }
     };
 
-    //Filter out admin user
+    //Filter out admin user from the list
     const filteredUsers = data?.getAllUsers?.filter((user:User)=>
     user.firstName!=="Admin" || user.email !=="admin"
     )  || [];
 
+    //display loading/error 
     if(loading)
             return (
         <Flex bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={16} justify="center" align="center">
@@ -95,6 +105,8 @@ const BlockUsers : React.FC = () => {
             <Text ml={4} color="white" fontSize="xl">Error Loading Data: {error.message}</Text>
         </Flex>
         );
+    
+    //main component render when data is loaded successfully
     return (
        <Box bgGradient="linear(to-br, blue.600, black)" minH="100vh" px={[4, 6, 12]} py={20}>
          <Box maxW="6xl" mx="auto">
