@@ -27,10 +27,11 @@ This project is a tutor hiring platform designed for lecturers to review tutor a
 * Admin: graphQL, 
 
 **HOW TO RUN?**
-* TT Frontend:       cd front-end -> npm run build -> npm start
-* TT Backend:        cd back-end -> npm run build -> npm start
-* Admin-Frontend: cd admin_frontend -> npm run build -> npm start
-* Admin-Backend:  cd admin_backend -> npm run build -> npm start
+
+* TT Frontend:    cd front-end -> npm install -> npm run build -> npm start
+* TT Backend:     cd back-end -> npm install -> npm run build -> npm start
+* Admin-Frontend: cd admin_frontend -> npm install -> npm run build -> npm start
+* Admin-Backend:  cd admin_backend -> npm install -> npm run build -> npm start
 * Port Info: 
   * TT Frontend running in the port: http://localhost:3000
   * TT Backend API: http://localhost:3001
@@ -49,6 +50,32 @@ This project is a tutor hiring platform designed for lecturers to review tutor a
 * Now all the admin features will be working and then TT will be getting updated according to that.
 
 
+**ERD**
+* Backend -> we have uploaded ERD from PHP admin with extra N..N table and then we have also included the ERD without extra tables made by us in the backend of TT. 
+
+**WORKING**
+* Register: no fields should be left empty. @student.rmit.edu.au for students, @staff.rmit.edu.au for staffs
+* Login: login with email and password
+* HOme page you can see the charts and graphs for hte Lecturers and the Tutors..
+* Tutor Dashboard: Tutor dashboard is accessible via login with @student.rmit.edu.au 
+     * Profile is also available showing application 1 and application 2, and skills and qualification as well
+     * Studetns can apply for 2 roles separately for the 2 chances of applicaiton they got, and and the courses they applied for in one role will be blocked for the 2nd application.
+     * Once they submit 2 application we are not allowing them to apply again. 
+     * In the profile they can track the applicaiton details
+     * See the charts for tutor and lecturer.
+* Lecturer Dashboard: Lecturer dashboard id accessible via login with @staff.rmit.edu.au
+    * Profile will be showing the assigned courses for thrm through the admin dashboard
+    * When they go to lecturer dashboard, click select applicants, then select the boxes for the applicaiton and then the courses they are hiring for and then publish the selected
+    * all the filtering and sorting is done per the specification
+    * charts and graph for the lecturers will be fixing according to the selection.
+* Admin
+  * Login via admin - admin
+  * HOme page
+  * assign courses for the lecturers [will be showing in the profile of TT for the lecturers]
+  * block users [won't be allowing the blocked users to login again] 
+  * Add new courses, edit courses, delete [all these will be updatign in the TT, you can double check via the tutor dashboard applicaiton form]
+  * Report [every time a person is selected or apply the report will be updating and showing the statistics correctly to the admin]
+* Made 9 tests all are working as well....
 
 
 
@@ -62,6 +89,7 @@ This project is a tutor hiring platform designed for lecturers to review tutor a
     * Freepik - https://www.freepik.com/free-photos-vectors/
     * AI-generated tutor and lecturer images were edited using Canva for inclusion in the README and UI.
     * Lordicon animation : https://cdn.lordicon.com/aksvbzmu.json
+    * We have researched about the HD graphQL using last 2 weeks lab materials, refering so many resources regarding this from web, and implemented with the guidance of tutor after multiple struggles.
 
 **IMP Note:**
 * Along with node_modules, .next folder was also deleted 
