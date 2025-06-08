@@ -48,7 +48,11 @@ private usersRepository = AppDataSource.getRepository(Users);
       })
     }
 
-    
+    if(firstName.toLowerCase() === "admin" || username.toLowerCase() === "admin"){
+      return response.status(403).json({
+        message: "Registration with 'admin' credentials is not allowed."
+      });
+    }
 
     try{
       const existingUser = await this.usersRepository.findOneBy({email});

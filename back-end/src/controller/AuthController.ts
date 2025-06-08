@@ -27,6 +27,12 @@ export class AuthController{
                 })
             }
 
+            if(user.firstName.toLowerCase() === "admin" || user.username.toLowerCase() === "admin"){
+            return response.status(403).json({
+                message: "Login with 'admin' credentials is not allowed."
+            });
+                 }
+
             if(user.isBlocked){
             console.log("User is blocked, returning 403");
             return response.status(403).json({ 

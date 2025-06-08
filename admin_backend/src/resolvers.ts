@@ -81,7 +81,7 @@ export const resolvers = {
     },
 
     
-
+    //fetching all courses ,with lecturers assigned
     getCourses: async () => {
       const courseRepo = AppDataSource.getRepository(Course);
       return await courseRepo.find({
@@ -89,6 +89,7 @@ export const resolvers = {
       });
     },
 
+    //fetching all lecturers with courses assigned
     getLecturers: async ()=>{
       const userRepo = AppDataSource.getRepository(Users);
       return await userRepo.find({
@@ -97,6 +98,7 @@ export const resolvers = {
       });
     },
 
+    //fetching all users
     getAllUsers : async ()=>{
       const userRepo = AppDataSource.getRepository(Users);
       return await userRepo.find();
@@ -166,6 +168,7 @@ export const resolvers = {
       return isPasswordValid;
     },
 
+    //assigning lecturers to 1 or more courses
     assignLectToCourses: async(_:unknown, {userId, courseIds} : {userId: number; courseIds: number[]}) => {
       const userRepo = AppDataSource.getRepository(Users);
       const courseRepo = AppDataSource.getRepository(Course);
@@ -188,6 +191,7 @@ export const resolvers = {
       return true;
     },
 
+    //blocking users entry into main TT website
     blockUsers: async(_:unknown, {userId, isBlocked}: {userId: number, isBlocked: boolean})=>{
       const userRepo = AppDataSource.getRepository(Users);
       const user = await userRepo.findOneBy({id: userId});
@@ -195,6 +199,10 @@ export const resolvers = {
       if(!user)
         throw new Error("User not found");
 
+      if(user.email === "admin" && user.firstName === "Admin"){
+        throw new Error("Cannot block the Admin user.");
+      }
+      
       user.isBlocked = isBlocked;
       await userRepo.save(user);
       return true;

@@ -162,6 +162,9 @@ if(!hasErrors){
       if(axiosError.response && axiosError.response.status === 409){
         setError("Email already exists. Please use a different one.")
       }
+      else if(axiosError.response && axiosError.response.status === 403){
+      setError("Registration with 'admin' credentials is not allowed.")
+    }
       else{
         console.log(axiosError);
       setError("Failed to create user");

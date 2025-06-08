@@ -173,6 +173,11 @@ export default function LoginPage(){
                     duration: 4000,
                     isClosable: true,
                 });
+            }else if(axiosError.response?.status === 403 || errorMessage.toLowerCase().includes("admin")){
+                setErrors((prev)=>({
+                    ...prev,
+                    password: "Login with 'admin' credentials is not allowed."
+                }));
             }
             // Check for invalid credentials (401 status)
             else if(axiosError.response?.status === 401 || errorMessage.toLowerCase().includes("invalid")) {
