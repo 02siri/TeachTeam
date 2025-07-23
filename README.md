@@ -1,4 +1,4 @@
-# s3959795-s3988110-a2 – Tutor Hiring Platform
+Tutor Hiring Platform
 
 ![App Logo](teach-team/public/logo1.png)
 
