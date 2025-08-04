@@ -42,7 +42,7 @@ This application provides a user-friendly interface and streamlined functionalit
 Conducted comprehensive unit tests using Jest to ensure backend controller reliability.
 ## Tech Stack
 
-**Frontend:** 
+**Frontend** 
 - Next.js
 - React.js
 - TypeScript
@@ -52,14 +52,14 @@ Conducted comprehensive unit tests using Jest to ensure backend controller relia
 - Lordicon
 - Recharts
 
-**Backend:**
+**Backend**
 - Express.js 
 - Node.js
 - MySQL
 - TypeORM
 - GraphQL
 
-**Testing:**
+**Testing**
 - Jest
 
 
