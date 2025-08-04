@@ -71,7 +71,7 @@ Clone the project
   git clone https://github.com/02siri/TeachTeam.git
 ```
 
-** TeachTeam Frontend:**
+**TeachTeam Frontend:**
 ```
 bash
 cd front-end
