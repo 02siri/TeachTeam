@@ -55,6 +55,8 @@ Conducted comprehensive unit tests using Jest to ensure backend controller relia
 **Backend**
 - Express.js 
 - Node.js
+
+**Database**
 - MySQL
 - TypeORM
 - GraphQL
